@@ -19,16 +19,19 @@ public class ArchonActor extends RobotActor {
 
             if(rc.isCoreReady()) {
 
-                spawnUnit(RobotType.SOLDIER);
-
                 countNearbyRobots();
 
                 if(enemiesNum+zombiesNum >0) {
+
+                    if(alliesNum > 3) {
+                        spawnUnit(RobotType.SOLDIER);
+                    }
                     findNearestHostilePos();
                     moveFromLocationClearIfStuck(nearestHostilePos);
                 } else  {
-                    findAverageAlliesPos();
-                    moveToLocationClearIfStuck(averageAlliesPos);
+                    spawnUnit(RobotType.SOLDIER);
+                    //findAverageAlliesPos();
+                    //moveToLocationClearIfStuck(averageAlliesPos);
                 }
 
                 //findAverageAlliesPos();

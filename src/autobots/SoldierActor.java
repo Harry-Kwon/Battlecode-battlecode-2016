@@ -37,7 +37,7 @@ public class SoldierActor extends RobotActor {
 
         if(enemiesNum+zombiesNum==0) {
             findAverageAlliesPos();
-            if(alliesNum < 7) {
+            if(alliesNum < 15) {
                 moveToLocationClearIfStuck(averageAlliesPos);
             } else {
                 moveFromLocationClearIfStuck(averageAlliesPos);
@@ -46,6 +46,14 @@ public class SoldierActor extends RobotActor {
 
         } else {
             findNearestHostilePos();
+
+            //turret rush
+            if(rc.senseRobotAtLocation(nearestHostilePos).type==RobotType.TURRET) {
+                if(nearestHostileDist >2) {
+                    moveToLocationClearIfStuck(nearestHostilePos);
+                    return;
+                }
+            }
 
             if(enemiesNum+zombiesNum>alliesNum) {
                 //move away from closest enemy
