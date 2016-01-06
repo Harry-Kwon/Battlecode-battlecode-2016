@@ -42,8 +42,6 @@ public class SoldierActor extends RobotActor {
             } else {
                 moveFromLocationClearIfStuck(averageAlliesPos);
             }
-            
-
         } else {
             findNearestHostilePos();
 
