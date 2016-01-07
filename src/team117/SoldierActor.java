@@ -28,6 +28,8 @@ public class SoldierActor extends RobotActor {
             /*act*/
             move();
 
+            lastLocation = new MapLocation(myLocation.x, myLocation.y);
+
             Clock.yield();
         }
     }
@@ -42,6 +44,8 @@ public class SoldierActor extends RobotActor {
             } else {
                 moveFromLocationClearIfStuck(averageAlliesPos);
             }
+            
+
         } else {
             findNearestHostilePos();
 
