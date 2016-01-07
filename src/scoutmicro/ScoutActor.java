@@ -1,4 +1,4 @@
-package team117;
+package scoutmicro;
 
 import battlecode.common.*;
 
