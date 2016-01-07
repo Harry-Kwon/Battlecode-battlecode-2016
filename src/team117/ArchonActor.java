@@ -114,10 +114,10 @@ public class ArchonActor extends RobotActor {
                 reachedCentral=true;
             }
 
-            if(hostilesNearby() && rc.getHealth() < 30) {
-                Direction dir = nearestHostilePos.directionTo(averageAlliesPos);
-                MapLocation target = averageAlliesPos.add(dir, 6);
-                moveToLocationClearIfStuck(target);
+            if(hostilesNearby() && rc.getHealth() < 300) {
+                //Direction dir = nearestHostilePos.directionTo(central);
+                //MapLocation target = central.add(dir, 6);
+                moveFromLocationClearIfStuck(nearestHostilePos);
             }
 
             if(!reachedCentral) {
@@ -142,7 +142,7 @@ public class ArchonActor extends RobotActor {
         double health = rc.getHealth();
         if(health < lastHealth) {
             rc.setIndicatorString(1, "GET BACK"+lastDirection);
-            moveInLastDirection();
+            moveInOppLastDirection();
         } 
         lastHealth = health;
     }
@@ -153,6 +153,15 @@ public class ArchonActor extends RobotActor {
         for(RobotInfo r : alliesInfo) {
             if(r.health < r.maxHealth && r.type!=RobotType.ARCHON) {
                 int dist = myLocation.distanceSquaredTo(r.location);
+                if(r.type==RobotType.SCOUT) {
+                    if(central.distanceSquaredTo(r.location)>100) {
+                        continue;
+                    }
+                }
+
+                if(central.distanceSquaredTo(r.location)>144) {
+                //    continue;
+                }
 
                 if(dist < bestDist) {
                     target = new MapLocation(r.location.x, r.location.y);
@@ -161,7 +170,7 @@ public class ArchonActor extends RobotActor {
             }
         }
 
-        if(target!=null && bestDist >2) {
+        if(target!=null ) {
             rc.setIndicatorString(0, "REPAIRING"+target.x+", "+target.y);
             moveToLocationClearIfStuck(target);
         } else {

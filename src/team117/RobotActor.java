@@ -140,7 +140,7 @@ public class RobotActor {
 
     Direction lastDirection = null;
 
-    public void moveInLastDirection() throws GameActionException {
+    public void moveInOppLastDirection() throws GameActionException {
         if(!rc.isCoreReady()) {
             return;
         }

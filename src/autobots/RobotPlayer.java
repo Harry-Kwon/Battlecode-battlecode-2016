@@ -16,6 +16,15 @@ public class RobotPlayer {
                 case SOLDIER:
                     actor = new SoldierActor(rc);
                     break;
+                case TURRET:
+                    actor = new TurretActor(rc);
+                    break;
+                case SCOUT:
+                    actor = new ScoutActor(rc);
+                    break;
+                case GUARD:
+                    actor = new GuardActor(rc);
+                    break;
                 default:
                     actor = new RobotActor(rc);
                     break;

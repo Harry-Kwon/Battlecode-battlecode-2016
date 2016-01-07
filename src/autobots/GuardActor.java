@@ -2,7 +2,7 @@ package autobots;
 
 import battlecode.common.*;
 
-public class SoldierActor extends RobotActor {
+public class GuardActor extends RobotActor {
 
 
 
@@ -15,7 +15,7 @@ public class SoldierActor extends RobotActor {
 
     int lastRound;
 
-    public SoldierActor(RobotController rc) throws GameActionException {
+    public GuardActor(RobotController rc) throws GameActionException {
         super(rc);
     }
 
@@ -28,8 +28,6 @@ public class SoldierActor extends RobotActor {
         //int[] rounds = schedule.getRounds();
         //lastRound = rounds[rounds.length-1];
         lastRound = 2000;
-
-        rc.setIndicatorString(1, "LAST ROUND: "+lastRound);
 
         if(blacklist!=null) {
             rc.setIndicatorString(0, "CENTER"+blacklistCenter.x+", "+blacklistCenter.y);
@@ -47,13 +45,11 @@ public class SoldierActor extends RobotActor {
 
             readBroadcasts();
 
-            /*act*/
             if(rc.getRoundNum() < lastRound+300) {
                 move();
             } else {
                 attackEnemyHQ();
             }
-            
 
             Clock.yield();
         }
@@ -174,13 +170,8 @@ public class SoldierActor extends RobotActor {
                 //move away from closest enemy
                 moveFromLocationClearIfStuck(nearestHostilePos);
             } else {
-                //attack
-                if(nearestHostileDist > 13) {
-                    moveToLocationClearIfStuck(nearestHostilePos);
-                } else {
-                    attack(nearestHostilePos);
-                    moveFromLocationClearIfStuck(nearestHostilePos);
-                }
+                attack(nearestHostilePos);
+                moveToLocationClearIfStuck(nearestHostilePos);
             }
         }
     }

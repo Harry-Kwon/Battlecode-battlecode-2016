@@ -1,4 +1,4 @@
-package team117;
+package autobots;
 
 import battlecode.common.*;
 
@@ -32,7 +32,7 @@ public class TurretActor extends RobotActor {
                     }
 
                     int[] msg = s.getMessage();
-                    if(msg==null || msg[0]!=500) {
+                    if(msg==null) {
                         continue;
                     }
                     MapLocation loc = new MapLocation(msg[1]%1000, msg[1]/1000);
