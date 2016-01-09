@@ -1,4 +1,4 @@
-package team117;
+package turretbot2;
 
 import battlecode.common.*;
 
@@ -21,9 +21,6 @@ public class RobotPlayer {
                     break;
                 case SCOUT:
                     actor = new ScoutActor(rc);
-                    break;
-                case GUARD:
-                    actor = new GuardActor(rc);
                     break;
                 default:
                     actor = new RobotActor(rc);

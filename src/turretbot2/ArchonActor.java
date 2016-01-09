@@ -1,4 +1,4 @@
-package team117;
+package turretbot2;
 
 import battlecode.common.*;
 
@@ -13,7 +13,6 @@ public class ArchonActor extends RobotActor {
     RobotType typeToSpawn;
 
     int state = 0;
-    int buildNum = 0;
 
     public ArchonActor(RobotController rc) throws GameActionException {
         super(rc);
@@ -88,14 +87,14 @@ public class ArchonActor extends RobotActor {
 
     public void determineSpawnType() {
         //set type to spawn
+        if(state==0) {
+            typeToSpawn = RobotType.TURRET;
+        } else if(state==1){
+            typeToSpawn = RobotType.GUARD;
+        }
 
-        switch(buildNum%8) {
-            case 1:
-                typeToSpawn = RobotType.SCOUT;
-                break;
-            default:
-                typeToSpawn = RobotType.SOLDIER;
-                break;
+        if(allyScoutsNum==0) {
+            typeToSpawn = RobotType.SCOUT;
         }
        
     }
@@ -103,9 +102,21 @@ public class ArchonActor extends RobotActor {
     public void act() throws GameActionException {
         setInitialVars();
         broadcastInitialPosition();
+        //spawn a Guard
+        Direction dir = Direction.NORTH_EAST;
+        if((myLocation.x+myLocation.y)%2==0) {
+            dir = Direction.NORTH;
+        }
+        for(int i=0; i<4; i++) {
+            if(spawnUnit(RobotType.GUARD, dir)) {
+                break;
+            }
+            
+            dir=dir.rotateRight().rotateRight();
+        }
+
         Clock.yield();
         findCentral();
-        Clock.yield();
 
         while(true) {
 
@@ -129,7 +140,7 @@ public class ArchonActor extends RobotActor {
                 if(rc.hasBuildRequirements(typeToSpawn)) {
                     buildActions();
                 } else {
-                    //repairAllies();
+                    repairAllies();
                 }
                 
             }
@@ -154,11 +165,6 @@ public class ArchonActor extends RobotActor {
         for(RobotInfo r : alliesInfo) {
             if(r.health < r.maxHealth && r.type!=RobotType.ARCHON) {
                 int dist = myLocation.distanceSquaredTo(r.location);
-                if(r.type==RobotType.SCOUT) {
-                    if(central.distanceSquaredTo(r.location)>100) {
-                        continue;
-                    }
-                }
 
                 if(central.distanceSquaredTo(r.location)>144) {
                 //    continue;
@@ -211,23 +217,12 @@ public class ArchonActor extends RobotActor {
         boolean spawned = false;
 
         if(hasRequirements) {
-            int remainder = 0;
 
             Direction dir = Direction.NORTH_EAST;
-            if(typeToSpawn==RobotType.TURRET) {
-                if((myLocation.x+myLocation.y)%2==0) {
-                    dir = Direction.NORTH;
-                }
-            } else {
-                if((myLocation.x+myLocation.y)%2==1) {
-                    dir = Direction.NORTH;
-                } else {
-                    dir = Direction.NORTH_EAST;
-                }
+            if((myLocation.x+myLocation.y)%2==0) {
+                dir = Direction.NORTH;
             }
-            
-            
-
+ 
             for(int i=0; i<4; i++) {
                 if(rc.senseRobotAtLocation(myLocation.add(dir))==null && rc.onTheMap(myLocation.add(dir))) {
                     hasSpawnableUnoccupiedTiles=true;
@@ -235,7 +230,6 @@ public class ArchonActor extends RobotActor {
 
                 if(spawnUnit(typeToSpawn, dir)) {
                     spawned = true;
-                    buildNum++;
                     break;
                 }
                 

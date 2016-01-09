@@ -1,4 +1,4 @@
-package team117;
+package ttms;
 
 import battlecode.common.*;
 
@@ -13,7 +13,6 @@ public class ArchonActor extends RobotActor {
     RobotType typeToSpawn;
 
     int state = 0;
-    int buildNum = 0;
 
     public ArchonActor(RobotController rc) throws GameActionException {
         super(rc);
@@ -79,23 +78,21 @@ public class ArchonActor extends RobotActor {
     }
 
     public void updateState() throws GameActionException {
-        if(allyTurretsNum>40) {
+        /*if(allyTurretsNum>40) {
             state = 1;
         } else {
             state = 0;
-        }
+        }*/
+        state = 0;
     }
 
     public void determineSpawnType() {
         //set type to spawn
 
-        switch(buildNum%8) {
-            case 1:
-                typeToSpawn = RobotType.SCOUT;
-                break;
-            default:
-                typeToSpawn = RobotType.SOLDIER;
-                break;
+        if(allyScoutsNum==0) {
+            typeToSpawn = RobotType.SCOUT;
+        } else {
+            typeToSpawn = RobotType.TURRET;
         }
        
     }
@@ -103,22 +100,22 @@ public class ArchonActor extends RobotActor {
     public void act() throws GameActionException {
         setInitialVars();
         broadcastInitialPosition();
+
         Clock.yield();
         findCentral();
-        Clock.yield();
 
         while(true) {
 
             updateRoundVars();
             
-            if(!reachedCentral && myLocation.distanceSquaredTo(central) <= 9) {
+            if(!reachedCentral && myLocation.distanceSquaredTo(central) <= 3) {
                 reachedCentral=true;
             }
 
-            if(hostilesNearby() && rc.getHealth() < 300) {
+            if(hostilesNearby() && rc.getHealth() <=500) {
                 //Direction dir = nearestHostilePos.directionTo(central);
                 //MapLocation target = central.add(dir, 6);
-                moveFromLocationClearIfStuck(nearestHostilePos);
+                moveToLocationClearIfStuck(central);
             }
 
             if(!reachedCentral) {
@@ -126,10 +123,21 @@ public class ArchonActor extends RobotActor {
             } else {
                 //checkHealth();
                 repairAdjacentRobots();
+                findNearestTurret();
+                
                 if(rc.hasBuildRequirements(typeToSpawn)) {
-                    buildActions();
+                    if(nearestTurretDist <=3) {
+                        buildActions();
+                    } else {
+                        if(nearestTurretPos!=null) {
+                            moveToLocationClearIfStuck(nearestTurretPos);
+                        } else {
+                            buildActions();
+                        }
+                    }
+                    
                 } else {
-                    //repairAllies();
+                    repairAllies();
                 }
                 
             }
@@ -154,11 +162,6 @@ public class ArchonActor extends RobotActor {
         for(RobotInfo r : alliesInfo) {
             if(r.health < r.maxHealth && r.type!=RobotType.ARCHON) {
                 int dist = myLocation.distanceSquaredTo(r.location);
-                if(r.type==RobotType.SCOUT) {
-                    if(central.distanceSquaredTo(r.location)>100) {
-                        continue;
-                    }
-                }
 
                 if(central.distanceSquaredTo(r.location)>144) {
                 //    continue;
@@ -196,7 +199,7 @@ public class ArchonActor extends RobotActor {
     }
 
     public boolean hostilesNearby() {
-        if(enemiesNum+zombiesNum>0 /*&& nearestHostileDist<=2*/) {
+        if(enemiesNum+zombiesNum>0 && nearestHostileDist<=9) {
             return true;
         }
         return false;
@@ -211,23 +214,12 @@ public class ArchonActor extends RobotActor {
         boolean spawned = false;
 
         if(hasRequirements) {
-            int remainder = 0;
 
             Direction dir = Direction.NORTH_EAST;
-            if(typeToSpawn==RobotType.TURRET) {
-                if((myLocation.x+myLocation.y)%2==0) {
-                    dir = Direction.NORTH;
-                }
-            } else {
-                if((myLocation.x+myLocation.y)%2==1) {
-                    dir = Direction.NORTH;
-                } else {
-                    dir = Direction.NORTH_EAST;
-                }
+            if((myLocation.x+myLocation.y)%2==0) {
+                dir = Direction.NORTH;
             }
-            
-            
-
+ 
             for(int i=0; i<4; i++) {
                 if(rc.senseRobotAtLocation(myLocation.add(dir))==null && rc.onTheMap(myLocation.add(dir))) {
                     hasSpawnableUnoccupiedTiles=true;
@@ -235,7 +227,6 @@ public class ArchonActor extends RobotActor {
 
                 if(spawnUnit(typeToSpawn, dir)) {
                     spawned = true;
-                    buildNum++;
                     break;
                 }
                 

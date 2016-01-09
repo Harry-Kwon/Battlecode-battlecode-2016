@@ -1,4 +1,4 @@
-package team117;
+package ttms;
 
 import battlecode.common.*;
 
@@ -127,7 +127,7 @@ public class RobotActor {
             allyScoutsNum=0;
             for(int i=0; i<alliesNum; i++) {
                 if(alliesInfo[i].type==RobotType.SCOUT) {
-                    if(myLocation.distanceSquaredTo(alliesPos[i]) <= 25) {
+                    if(myLocation.distanceSquaredTo(alliesPos[i]) <= 16) {
                         allyScoutsNum++;
                     }
                 }
@@ -135,20 +135,26 @@ public class RobotActor {
         }
     }
 
+    MapLocation nearestTurretPos;
+    int nearestTurretDist;
+
+    public void findNearestTurret() {
+        nearestTurretDist=9999999;
+        nearestTurretPos=null;
+        for(RobotInfo info : alliesInfo) {
+            if(info.type == RobotType.TURRET) {
+                int dist = myLocation.distanceSquaredTo(info.location);
+                if(dist < nearestTurretDist) {
+                    nearestTurretDist = dist;
+                    nearestTurretPos = new MapLocation(info.location.x, info.location.y);
+                }
+            }
+        }
+    }
 
     /*****navigation*******/
 
     Direction lastDirection = null;
-
-    public void moveInLastDirection() throws GameActionException {
-        if(!rc.isCoreReady() || lastDirection ==null) {
-            return;
-        }
-
-        Direction dir = lastDirection;
-        lastDirection = lastDirection.opposite();
-        moveInDirectionClearIfStuck(lastDirection);
-    }
 
     public void moveInOppLastDirection() throws GameActionException {
         if(!rc.isCoreReady()) {
@@ -173,54 +179,24 @@ public class RobotActor {
 
     }
 
-    public void moveFromLocationClear(MapLocation target) throws GameActionException {
+    public void moveFromLocation(MapLocation target) throws GameActionException {
         Direction dir = myLocation.directionTo(target).opposite();
 
         if(dir == Direction.OMNI) {
             dir = Direction.NORTH;
         }
 
-        moveInDirectionClear(dir);
+        moveInDirection(dir);
     }
 
-    public void moveToLocationClear(MapLocation target) throws GameActionException {
+    public void moveToLocation(MapLocation target) throws GameActionException {
         Direction dir = myLocation.directionTo(target);
 
         if(dir == Direction.OMNI) {
             dir = Direction.NORTH;
         }
 
-        moveInDirectionClear(dir);
-    }
-
-    public void moveInDirectionClear(Direction d) throws GameActionException {
-
-        if(!rc.isCoreReady()) {
-            return;
-        }
-
-
-        //not sure if Direction is passed by reference
-        Direction dir = d;
-        for(int i=0; i<8;i++) {
-            Direction thisDir = nextDir(dir, i);
-            MapLocation target = myLocation.add(thisDir);
-
-            if(rc.senseRobotAtLocation(target)!=null) {
-                continue;
-            }
-
-            if(rc.senseRubble(target) < 50.0 && thisDir.opposite()!=lastDirection) {
-                if(rc.canMove(thisDir)) {
-                    rc.move(thisDir);
-                    lastDirection = thisDir;
-                    return;
-                }
-            } else {
-                rc.clearRubble(thisDir);
-                return;
-            }
-        }
+        moveInDirection(dir);
     }
 
     public void moveFromLocationClearIfStuck(MapLocation target) throws GameActionException {
@@ -257,12 +233,10 @@ public class RobotActor {
             Direction thisDir = nextDir(dir, i);
 
             if(safeToMove(thisDir)) {
-                if(rc.canMove(thisDir)) {
-                    rc.move(thisDir);
-                    moved = true;
-                    lastDirection = thisDir;
-                    return;
-                }
+                rc.move(thisDir);
+                moved = true;
+                lastDirection = thisDir;
+                return;
             }
         }
 
@@ -309,6 +283,23 @@ public class RobotActor {
                 break;
         }
         return(dir);
+    }
+
+    public void moveInDirection(Direction d) throws GameActionException {
+        if(!rc.isCoreReady()) {
+            return;
+        }
+
+        //not sure if Direction is passed by reference
+        Direction dir = d;
+       for(int i=0; i<8;i++) {
+            Direction thisDir = nextDir(dir, i);
+
+            if(safeToMove(thisDir)) {
+                rc.move(thisDir);
+                return;
+            }
+        }
     }
 
     public void moveInSomeDirection() throws GameActionException {
