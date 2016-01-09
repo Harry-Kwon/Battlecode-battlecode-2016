@@ -4,12 +4,6 @@ import battlecode.common.*;
 
 public class ScoutActor extends RobotActor {
 
-    MapLocation nearestTurretPos;
-    int nearestTurretDist;
-
-    MapLocation nearestScoutPos;
-    int nearestScoutDist;
-
     MapLocation nearestArchonPos;
     int nearestArchonDist;
 
@@ -40,6 +34,8 @@ public class ScoutActor extends RobotActor {
                 rc.broadcastMessageSignal(0, nearestHostilePos.x+1000*nearestHostilePos.y, 106);
             } 
 
+            move();
+
             /*if(nearestHostileDist <= 3) {
                 moveFromLocationClearIfStuck(nearestHostilePos);
             } else if(nearestHostileDist >8) {
@@ -53,6 +49,24 @@ public class ScoutActor extends RobotActor {
             lastLocation = new MapLocation(myLocation.x, myLocation.y);
 
             Clock.yield();
+        }
+    }
+
+    public void move() throws GameActionException {
+        findNearestTurret();
+        findNearestScout();
+        if(nearestTurretDist>3) {
+            if(nearestTurretPos!=null) {
+                moveToLocationClearIfStuck(nearestTurretPos);
+            } else {
+                moveToLocationClearIfStuck(averageAlliesPos);
+            }
+        } else {
+            if(nearestScoutPos!=null) {
+                moveFromLocationClearIfStuck(nearestScoutPos);
+            } else {
+                moveFromLocationClearIfStuck(averageAlliesPos);
+            }
         }
     }
 
@@ -72,7 +86,7 @@ public class ScoutActor extends RobotActor {
 
     public void moveToBorder() throws GameActionException {
 
-        findNearestTurret(myLocation);
+        //findNearestTurret(myLocation);
         findNearestScout(myLocation);
 
         
@@ -105,20 +119,6 @@ public class ScoutActor extends RobotActor {
                 if(dist < nearestScoutDist) {
                     nearestScoutDist = dist;
                     nearestScoutPos = new MapLocation(info.location.x, info.location.y);
-                }
-            }
-        }
-    }
-
-    public void findNearestTurret(MapLocation check) throws GameActionException {
-        nearestTurretDist = 9999999;
-        nearestTurretPos = null;
-        for(RobotInfo info:alliesInfo) {
-            if(info.type==RobotType.TURRET) {
-                int dist = check.distanceSquaredTo(info.location);
-                if(dist < nearestTurretDist) {
-                    nearestTurretDist = dist;
-                    nearestTurretPos = new MapLocation(info.location.x, info.location.y);
                 }
             }
         }

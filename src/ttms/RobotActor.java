@@ -152,6 +152,23 @@ public class RobotActor {
         }
     }
 
+    MapLocation nearestScoutPos;
+    int nearestScoutDist;
+
+    public void findNearestScout() {
+        nearestScoutDist=9999999;
+        nearestScoutPos=null;
+        for(RobotInfo info : alliesInfo) {
+            if(info.type == RobotType.SCOUT) {
+                int dist = myLocation.distanceSquaredTo(info.location);
+                if(dist < nearestScoutDist) {
+                    nearestScoutDist = dist;
+                    nearestScoutPos = new MapLocation(info.location.x, info.location.y);
+                }
+            }
+        }
+    }
+
     /*****navigation*******/
 
     Direction lastDirection = null;
