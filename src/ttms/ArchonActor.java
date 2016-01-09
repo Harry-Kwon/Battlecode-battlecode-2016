@@ -112,6 +112,7 @@ public class ArchonActor extends RobotActor {
                 reachedCentral=true;
             }
 
+
             if(hostilesNearby() && rc.getHealth() <=500) {
                 //Direction dir = nearestHostilePos.directionTo(central);
                 //MapLocation target = central.add(dir, 6);

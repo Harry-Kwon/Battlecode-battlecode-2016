@@ -32,6 +32,9 @@ public class ScoutActor extends RobotActor {
 
             if(enemiesNum+zombiesNum > 0) {
                 rc.broadcastMessageSignal(0, nearestHostilePos.x+1000*nearestHostilePos.y, 106);
+                /*for(RobotInfo info : enemiesInfo) {
+                    rc.broadcastMessageSignal(0, info.location.x+1000*info.location.y, 106);
+                }*/
             } 
 
             move();
@@ -55,6 +58,12 @@ public class ScoutActor extends RobotActor {
     public void move() throws GameActionException {
         findNearestTurret();
         findNearestScout();
+
+        if(nearestHostileDist <= 8) {
+            moveFromLocationClearIfStuck(nearestHostilePos);
+            return;
+        }
+
         if(nearestTurretDist>3) {
             if(nearestTurretPos!=null) {
                 moveToLocationClearIfStuck(nearestTurretPos);
