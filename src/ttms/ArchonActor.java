@@ -163,6 +163,12 @@ public class ArchonActor extends RobotActor {
                 reachedCentral=true;
             }
             
+            if(nearestHostilePos != null) {
+                rc.broadcastMessageSignal(0, nearestHostilePos.x+1000*nearestHostilePos.y, myType.sensorRadiusSquared*2);
+            } else if(nearestDenPos != null) {
+            	rc.broadcastMessageSignal(1, nearestDenPos.x+1000*nearestDenPos.y, myType.sensorRadiusSquared*2);
+            }
+            
             if(!reachedCentral) {
                 moveToLocationClearIfStuck(central);
             } else {

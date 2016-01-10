@@ -42,7 +42,7 @@ public class ScoutActor extends RobotActor {
                     rc.broadcastMessageSignal(0, info.location.x+1000*info.location.y, 106);
                 }*/
             } else if(nearestDenPos != null) {
-            	rc.broadcastMessageSignal(1, nearestDenPos.x+1000*nearestDenPos.y, myType.sensorRadiusSquared*2);
+            	rc.broadcastMessageSignal(1, nearestDenPos.x+1000*nearestDenPos.y, myType.sensorRadiusSquared*2*40);
             }
             
 //            findNearestTurret();
