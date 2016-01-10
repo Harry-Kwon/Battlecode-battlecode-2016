@@ -1,6 +1,7 @@
 package ttms;
 
 import battlecode.common.Clock;
+import battlecode.common.Direction;
 import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
@@ -171,11 +172,16 @@ public class MobileTurretActor extends RobotActor {
 	
     public void moveTTM() throws GameActionException {
 
-
         if(nearestHostilePos!=null) {
         	rc.broadcastSignal(myType.sensorRadiusSquared*2);
         	if(allyGuardsNum+allyTurretsNum>=enemiesNum+zombiesNum) {
-        		if(rc.isWeaponReady()) {rc.unpack();}
+        		if(rc.isWeaponReady()) {
+        			if(onEvenTile()) {
+        				rc.unpack();
+        			} else {
+        				moveToEvenTile();
+        			}
+        		}
         	} else {
         		moveFromLocation(nearestHostilePos);
         	}
@@ -183,12 +189,22 @@ public class MobileTurretActor extends RobotActor {
         } else {
         	if(nearestBroadcastEnemy!=null) {
         		if(nearestAttackableEnemy!=null && myLocation.distanceSquaredTo(nearestAttackableEnemy)<=36) {
-        			if(rc.isWeaponReady()) {rc.unpack();}
+        			if(rc.isWeaponReady()) {
+        				if(onEvenTile()) {
+        					rc.unpack();
+        				} else {
+        					moveToEvenTile();
+        				}
+        			}
         		} else {
         			moveToLocation(nearestBroadcastEnemy);
         		}
         	} else if(nearestBroadcastAlly!=null) {
         		moveToLocation(nearestBroadcastAlly);
+        	} else if(nearestDenPos!=null) { 
+        		moveToLocationClearIfStuck(nearestDenPos);
+        	} else if(nearestBroadcastDen!=null) {
+        		moveToLocationClearIfStuck(nearestBroadcastDen);
         	} else {
         		if(alliesNum >= 20) {
         			moveFromLocation(averageAlliesNoScouts);
@@ -197,5 +213,26 @@ public class MobileTurretActor extends RobotActor {
         		}
         	}
         }
+    }
+    
+    public void moveToEvenTile() throws GameActionException {
+    	if(!rc.isCoreReady()) {
+    		return;
+    	}
+    	Direction dir = Direction.NORTH;
+    	for(int i=0; i<4; i++) {
+    		if(rc.canMove(dir)) {
+    			rc.move(dir);
+    			return;
+    		}
+    		dir = dir.rotateRight().rotateRight();
+    	}
+    }
+    
+    public boolean onEvenTile() {
+    	if((myLocation.x+myLocation.y)%2==0) {
+    		return true;
+    	}
+    	return false;
     }
 }
