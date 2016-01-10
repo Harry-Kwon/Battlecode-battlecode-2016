@@ -7,12 +7,18 @@ public class ArchonActor extends RobotActor {
 
     MapLocation central = myLocation;
     boolean reachedCentral = false;
+    
+    MapLocation nearestBroadcastEnemy;
+	MapLocation nearestBroadcastAlly;
 
     double lastHealth;
 
     RobotType typeToSpawn;
 
     int state = 0;
+    
+    Signal[] signals;
+    RobotType myType;
 
     public ArchonActor(RobotController rc) throws GameActionException {
         super(rc);
@@ -67,14 +73,54 @@ public class ArchonActor extends RobotActor {
     }
 
     public void updateRoundVars() throws GameActionException {
-        myLocation = rc.getLocation();
+    	myType = rc.getType();
+    	myLocation = rc.getLocation();
+    	signals = rc.emptySignalQueue();
+    	
         countNearbyRobots();
-        findNearestHostilePos();
         findAverageAlliesPos();
+        findNearestHostilePos();
+        readBroadcasts();
 
         //updateState();
 
         determineSpawnType();
+    }
+    
+    public void readBroadcasts() throws GameActionException {
+        nearestBroadcastEnemy = null;
+        nearestBroadcastAlly = null;
+
+        int bestEnemyDist = 2000000;
+        int bestAllyDist = 2000000;
+        
+        for(Signal s : signals) {
+            if(s.getTeam() != myTeam) {
+                continue;
+            }
+            
+            int[] msg = s.getMessage();
+            if(msg==null) {
+            	MapLocation loc = s.getLocation();
+                
+                int dist = myLocation.distanceSquaredTo(loc);
+                if(dist < bestAllyDist) {
+                    bestAllyDist = dist;
+                    nearestBroadcastEnemy = new MapLocation(loc.x, loc.y);
+                }
+            	 
+            } else {
+            	MapLocation loc = new MapLocation(msg[1]%1000, msg[1]/1000);
+                
+                int dist = myLocation.distanceSquaredTo(loc);
+                if(dist < bestEnemyDist) {
+                    bestEnemyDist = dist;
+                    nearestBroadcastEnemy = new MapLocation(loc.x, loc.y);
+                }
+            }
+            
+            
+        }
     }
 
     public void updateState() throws GameActionException {
@@ -112,37 +158,56 @@ public class ArchonActor extends RobotActor {
 
             updateRoundVars();
             
-            if(!reachedCentral && myLocation.distanceSquaredTo(central) <= 3) {
+            if(!reachedCentral && myLocation.distanceSquaredTo(central) <= 16) {
                 reachedCentral=true;
             }
-
-
-            if(hostilesNearby() && rc.getHealth() <=500) {
-                //Direction dir = nearestHostilePos.directionTo(central);
-                //MapLocation target = central.add(dir, 6);
-                moveToLocationClearIfStuck(central);
-            }
-
+            
             if(!reachedCentral) {
                 moveToLocationClearIfStuck(central);
             } else {
-                //checkHealth();
-                repairAdjacentRobots();
-                findNearestTurret();
-                
-                if(rc.hasBuildRequirements(typeToSpawn)) {
-                    buildActions();
-                    
-                } else {
-                    repairAllies();
-                }
+            	
+            	move();
                 
             }
 
             Clock.yield();
         }
     }
-
+    
+    public void move() throws GameActionException {
+        repairAdjacentRobots();
+        
+        if(hostilesNearby() /*&& rc.getHealth() <=500*/) {
+        	Direction dir = myLocation.directionTo(nearestHostilePos);
+        	int bestDist = myLocation.add(dir).distanceSquaredTo(averageAlliesPos);
+        	
+        	int dist = myLocation.add(dir.rotateRight()).distanceSquaredTo(averageAlliesPos);
+        	if(dist > bestDist) {
+        		dir = dir.rotateRight();
+        		bestDist = dist;
+        	}
+        	dist = myLocation.add(dir.rotateLeft().rotateLeft()).distanceSquaredTo(averageAlliesPos);
+        	if(dist > bestDist) {
+        		dir = dir.rotateLeft().rotateLeft();
+        		bestDist = dist;
+        	}
+            moveFromLocationClearIfStuck(nearestHostilePos);
+            return;
+        }
+        
+        if(rc.hasBuildRequirements(typeToSpawn)) {
+            buildActions();
+        } else if(!repairAllies()){
+            if(nearestBroadcastEnemy!=null) {
+            	moveToLocationClearIfStuck(nearestBroadcastEnemy);
+            } else if(nearestBroadcastAlly!=null) {
+            	moveToLocationClearIfStuck(nearestBroadcastAlly);
+            } else {
+            	moveToLocationClearIfStuck(averageAlliesPos);
+            }
+        }
+    }
+    
     public void checkHealth() throws GameActionException {
 
         double health = rc.getHealth();
@@ -153,16 +218,13 @@ public class ArchonActor extends RobotActor {
         lastHealth = health;
     }
 
-    public void repairAllies() throws GameActionException {
+    public boolean repairAllies() throws GameActionException {
+    	
         MapLocation target = null;
         int bestDist = 9999999;
         for(RobotInfo r : alliesInfo) {
             if(r.health < r.maxHealth && r.type!=RobotType.ARCHON) {
                 int dist = myLocation.distanceSquaredTo(r.location);
-
-                if(central.distanceSquaredTo(r.location)>144) {
-                //    continue;
-                }
 
                 if(dist < bestDist) {
                     target = new MapLocation(r.location.x, r.location.y);
@@ -174,8 +236,9 @@ public class ArchonActor extends RobotActor {
         if(target!=null ) {
             rc.setIndicatorString(0, "REPAIRING"+target.x+", "+target.y);
             moveToLocationClearIfStuck(target);
+            return(true);
         } else {
-            moveToLocationClearIfStuck(central);
+            return(false);
         }
     }
 

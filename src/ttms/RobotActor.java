@@ -170,10 +170,26 @@ public class RobotActor {
             }
         }
     }
+    
+    MapLocation nearestAllyPos;
+    int nearestAllyDist;
+    
+    public void findNearestAlly() {
+        nearestAllyDist=9999999;
+        nearestAllyPos=null;
+        for(RobotInfo info : alliesInfo) {
+            int dist = myLocation.distanceSquaredTo(info.location);
+            if(dist < nearestAllyDist) {
+                nearestAllyDist = dist;
+                nearestAllyPos = new MapLocation(info.location.x, info.location.y);
+            }
+        }
+    }
 
     /*****navigation*******/
 
     Direction lastDirection = null;
+    Direction directionBias = Direction.NORTH;
 
     public void moveInOppLastDirection() throws GameActionException {
         if(!rc.isCoreReady()) {
@@ -198,11 +214,32 @@ public class RobotActor {
 
     }
 
+
+    public void moveFromLocationClear(MapLocation target) throws GameActionException {
+        Direction dir = myLocation.directionTo(target).opposite();
+
+        if(dir == Direction.OMNI) {
+            dir = directionBias;
+        }
+
+        moveInDirectionClear(dir);
+    }
+
+    public void moveToLocationClear(MapLocation target) throws GameActionException {
+        Direction dir = myLocation.directionTo(target);
+
+        if(dir == Direction.OMNI) {
+            dir = directionBias;
+        }
+
+        moveInDirectionClear(dir);
+    }
+    
     public void moveFromLocation(MapLocation target) throws GameActionException {
         Direction dir = myLocation.directionTo(target).opposite();
 
         if(dir == Direction.OMNI) {
-            dir = Direction.NORTH;
+            dir = directionBias;
         }
 
         moveInDirection(dir);
@@ -212,7 +249,7 @@ public class RobotActor {
         Direction dir = myLocation.directionTo(target);
 
         if(dir == Direction.OMNI) {
-            dir = Direction.NORTH;
+            dir = directionBias;
         }
 
         moveInDirection(dir);
@@ -222,7 +259,7 @@ public class RobotActor {
         Direction dir = myLocation.directionTo(target).opposite();
 
         if(dir == Direction.OMNI) {
-            dir = Direction.NORTH;
+            dir = directionBias;
         }
 
         moveInDirectionClearIfStuck(dir);
@@ -232,12 +269,43 @@ public class RobotActor {
         Direction dir = myLocation.directionTo(target);
 
         if(dir == Direction.OMNI) {
-            dir = Direction.NORTH;
+            dir = directionBias;
         }
 
         moveInDirectionClearIfStuck(dir);
     }
+    
+    public void moveInDirectionClear(Direction d) throws GameActionException {
+    	if(!rc.isCoreReady()) {
+            return;
+        }
 
+        //not sure if Direction is passed by reference
+        Direction dir = d;
+        for(int i=0; i<8;i++) {
+            Direction thisDir = nextDir(dir, i);
+            MapLocation loc = myLocation.add(thisDir);
+            
+            if(!rc.onTheMap(myLocation.add(thisDir))) {
+        		directionBias = directionBias.opposite();
+        	}
+
+            if(rc.senseRobotAtLocation(loc)==null && rc.onTheMap(loc)) {
+            	if(rc.senseRubble((loc)) < 50) {
+            		if(rc.canMove(thisDir)) {
+            			rc.move(thisDir);
+                        lastDirection = thisDir;
+                        return;
+            		}
+            	} else {
+            		rc.clearRubble(thisDir);
+            		return;
+            	}
+                
+            }
+        }
+    }
+    
     public void moveInDirectionClearIfStuck(Direction d) throws GameActionException {
 
         if(!rc.isCoreReady()) {
@@ -250,6 +318,10 @@ public class RobotActor {
         Direction dir = d;
         for(int i=0; i<8;i++) {
             Direction thisDir = nextDir(dir, i);
+            
+            if(!rc.onTheMap(myLocation.add(thisDir))) {
+        		directionBias = directionBias.opposite();
+        	}
 
             if(safeToMove(thisDir)) {
                 rc.move(thisDir);
@@ -313,6 +385,10 @@ public class RobotActor {
         Direction dir = d;
        for(int i=0; i<8;i++) {
             Direction thisDir = nextDir(dir, i);
+            
+            if(!rc.onTheMap(myLocation.add(thisDir))) {
+        		directionBias = directionBias.opposite();
+        	}
 
             if(safeToMove(thisDir)) {
                 rc.move(thisDir);
@@ -322,8 +398,13 @@ public class RobotActor {
     }
 
     public void moveInSomeDirection() throws GameActionException {
-        Direction dir = Direction.NORTH;
+        Direction dir = directionBias;
         for(int i=0; i<8;i++) {
+        	
+        	if(!rc.onTheMap(myLocation.add(dir))) {
+        		directionBias = directionBias.opposite();
+        	}
+        	
             if(safeToMove(dir)) {
                 rc.move(dir);
                 break;

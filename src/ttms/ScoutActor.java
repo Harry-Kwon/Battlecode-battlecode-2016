@@ -8,6 +8,7 @@ public class ScoutActor extends RobotActor {
     int nearestArchonDist;
 
     MapLocation spawnLocation = null;
+    RobotType myType;
 
     public ScoutActor(RobotController rc) throws GameActionException {
         super(rc);
@@ -15,6 +16,7 @@ public class ScoutActor extends RobotActor {
 
     public void act() throws GameActionException {
         myTeam = rc.getTeam();
+        myType = rc.getType();
 
         spawnLocation = rc.getLocation();
 
@@ -31,7 +33,7 @@ public class ScoutActor extends RobotActor {
             }*/
 
             if(enemiesNum+zombiesNum > 0) {
-                rc.broadcastMessageSignal(0, nearestHostilePos.x+1000*nearestHostilePos.y, 106);
+                rc.broadcastMessageSignal(0, nearestHostilePos.x+1000*nearestHostilePos.y, myType.sensorRadiusSquared*2);
                 /*for(RobotInfo info : enemiesInfo) {
                     rc.broadcastMessageSignal(0, info.location.x+1000*info.location.y, 106);
                 }*/

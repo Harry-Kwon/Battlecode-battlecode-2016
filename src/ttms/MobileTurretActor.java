@@ -155,12 +155,12 @@ public class MobileTurretActor extends RobotActor {
         	if(alliesNum>=enemiesNum+zombiesNum) {
         		rc.unpack();
         	} else {
-        		moveFromLocationClearIfStuck(nearestHostilePos);
+        		moveFromLocation(nearestHostilePos);
         	}
         	
         } else {
         	if(nearestBroadcastEnemy!=null) {
-        		if(nearestAttackableEnemy!=null) {
+        		if(nearestAttackableEnemy!=null && myLocation.distanceSquaredTo(nearestAttackableEnemy)<=36) {
         			rc.unpack();
         		} else {
         			moveToLocation(nearestBroadcastEnemy);

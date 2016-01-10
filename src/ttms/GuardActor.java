@@ -88,10 +88,11 @@ public class GuardActor extends RobotActor {
 
         if(enemiesNum+zombiesNum>0) {
         	rc.broadcastSignal(myType.sensorRadiusSquared*2);
-        	if(alliesNum >= enemiesNum+zombiesNum) {
+        	if(alliesNum >= enemiesNum+zombiesNum || allyTurretsNum>0) {
         		moveToLocationClearIfStuck(nearestHostilePos);
         	} else {
         		moveFromLocationClearIfStuck(nearestHostilePos);
+        		
         	}
         	
         } else {
@@ -100,7 +101,12 @@ public class GuardActor extends RobotActor {
         	} else if(nearestBroadcastAlly!=null) {
         		moveToLocationClearIfStuck(nearestBroadcastAlly);
         	} else {
-        		moveToLocationClearIfStuck(averageAlliesPos);
+        		if(alliesNum >= 20) {
+        			moveFromLocationClear(averageAlliesPos);
+        		} else {
+        			moveToLocationClearIfStuck(averageAlliesPos);
+        		}
+        		
         	}
         }
     }
