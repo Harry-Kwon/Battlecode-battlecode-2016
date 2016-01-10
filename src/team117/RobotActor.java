@@ -41,6 +41,9 @@ public class RobotActor {
 
     int nearestHostileDist;
     MapLocation nearestHostilePos;
+    
+    int nearestDenDist;
+    MapLocation nearestDenPos;
 
     MapLocation averageAlliesPos;
 
@@ -60,24 +63,63 @@ public class RobotActor {
 
         averageAlliesPos = new MapLocation(cX/alliesNum, cY/alliesNum);
     }
+    
+    MapLocation averageAlliesNoScouts;
+    
+    public void findAverageAlliesNoScouts() throws GameActionException {
+    	int cX = myLocation.x;
+    	int cY = myLocation.y;
+    	int points = 1;
+    	for(RobotInfo info : alliesInfo) {
+    		if(info.type!=RobotType.SCOUT) {
+    			cX+=info.location.x;
+    			cY+=info.location.y;
+    			points++;
+    		}
+    	}
+    	
+    	averageAlliesNoScouts = new MapLocation(cX/points, cY/points);
+    	
+    	
+    }
 
     public void findNearestHostilePos() throws GameActionException {
         nearestHostileDist = 999999999;
-        nearestHostilePos = myLocation;
-        for(MapLocation loc : enemiesPos) {
-            int dist = myLocation.distanceSquaredTo(loc);
-            if(dist < nearestHostileDist) {
-                nearestHostileDist = dist;
-                nearestHostilePos = new MapLocation(loc.x, loc.y);
-            }
+        nearestHostilePos = null;
+        
+        nearestDenDist = 999999999;
+        nearestDenPos = null;
+        
+        for(RobotInfo info : enemiesInfo) {
+        	MapLocation loc = info.location;
+        	int dist = myLocation.distanceSquaredTo(loc);
+        	if(info.type != RobotType.ZOMBIEDEN) {
+                if(dist < nearestHostileDist) {
+                    nearestHostileDist = dist;
+                    nearestHostilePos = new MapLocation(loc.x, loc.y);
+                }
+        	} else {
+        		if(dist < nearestDenDist) {
+        			nearestDenDist = dist;
+        			nearestDenPos = new MapLocation(loc.x, loc.y);
+        		}
+        	}
         }
-
-        for(MapLocation loc : zombiesPos) {
-            int dist = myLocation.distanceSquaredTo(loc);
-            if(dist < nearestHostileDist) {
-                nearestHostileDist = dist;
-                nearestHostilePos = new MapLocation(loc.x, loc.y);
-            }
+        
+        for(RobotInfo info : zombiesInfo) {
+        	MapLocation loc = info.location;
+        	int dist = myLocation.distanceSquaredTo(loc);
+        	if(info.type != RobotType.ZOMBIEDEN) {
+                if(dist < nearestHostileDist) {
+                    nearestHostileDist = dist;
+                    nearestHostilePos = new MapLocation(loc.x, loc.y);
+                }
+        	} else {
+        		if(dist < nearestDenDist) {
+        			nearestDenDist = dist;
+        			nearestDenPos = new MapLocation(loc.x, loc.y);
+        		}
+        	}
         }
     }
 
@@ -149,6 +191,23 @@ public class RobotActor {
                 if(dist < nearestTurretDist) {
                     nearestTurretDist = dist;
                     nearestTurretPos = new MapLocation(info.location.x, info.location.y);
+                }
+            }
+        }
+    }
+    
+    MapLocation farthestTurretPos;
+    int farthestTurretDist;
+
+    public void findFarthestTurret() {
+    	farthestTurretDist=9999999;
+    	farthestTurretPos=null;
+        for(RobotInfo info : alliesInfo) {
+            if(info.type == RobotType.TURRET) {
+                int dist = myLocation.distanceSquaredTo(info.location);
+                if(dist > farthestTurretDist) {
+                	farthestTurretDist = dist;
+                	farthestTurretPos = new MapLocation(info.location.x, info.location.y);
                 }
             }
         }
@@ -316,7 +375,7 @@ public class RobotActor {
 
         //not sure if Direction is passed by reference
         Direction dir = d;
-        for(int i=0; i<8;i++) {
+        for(int i=0; i<5;i++) {
             Direction thisDir = nextDir(dir, i);
             
             if(!rc.onTheMap(myLocation.add(thisDir))) {
@@ -332,12 +391,12 @@ public class RobotActor {
         }
 
         if(!moved) {
-            for(int i=0; i<8; i++) {
-                if(rc.senseRobotAtLocation(myLocation.add(dir))==null && rc.senseRubble(myLocation.add(dir)) > 50.0) {
-                    rc.clearRubble(dir);
+            for(int i=0; i<5; i++) {
+            	Direction thisDir = nextDir(dir, i);
+                if(rc.senseRobotAtLocation(myLocation.add(thisDir))==null && rc.senseRubble(myLocation.add(thisDir)) > 50.0) {
+                    rc.clearRubble(thisDir);
                     return;
                 }
-                dir = dir.rotateRight();
             }
         }
     }

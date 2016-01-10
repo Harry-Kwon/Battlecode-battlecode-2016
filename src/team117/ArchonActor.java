@@ -157,9 +157,16 @@ public class ArchonActor extends RobotActor {
         while(true) {
 
             updateRoundVars();
+            findAverageAlliesNoScouts();
             
             if(!reachedCentral && myLocation.distanceSquaredTo(central) <= 16) {
                 reachedCentral=true;
+            }
+            
+            if(nearestHostilePos != null) {
+                rc.broadcastMessageSignal(0, nearestHostilePos.x+1000*nearestHostilePos.y, myType.sensorRadiusSquared*2);
+            } else if(nearestDenPos != null) {
+            	rc.broadcastMessageSignal(1, nearestDenPos.x+1000*nearestDenPos.y, myType.sensorRadiusSquared*2);
             }
             
             if(!reachedCentral) {
@@ -181,12 +188,12 @@ public class ArchonActor extends RobotActor {
         	Direction dir = myLocation.directionTo(nearestHostilePos);
         	int bestDist = myLocation.add(dir).distanceSquaredTo(averageAlliesPos);
         	
-        	int dist = myLocation.add(dir.rotateRight()).distanceSquaredTo(averageAlliesPos);
+        	int dist = myLocation.add(dir.rotateRight()).distanceSquaredTo(averageAlliesNoScouts);
         	if(dist > bestDist) {
         		dir = dir.rotateRight();
         		bestDist = dist;
         	}
-        	dist = myLocation.add(dir.rotateLeft().rotateLeft()).distanceSquaredTo(averageAlliesPos);
+        	dist = myLocation.add(dir.rotateLeft().rotateLeft()).distanceSquaredTo(averageAlliesNoScouts);
         	if(dist > bestDist) {
         		dir = dir.rotateLeft().rotateLeft();
         		bestDist = dist;
@@ -203,7 +210,7 @@ public class ArchonActor extends RobotActor {
             } else if(nearestBroadcastAlly!=null) {
             	moveToLocationClearIfStuck(nearestBroadcastAlly);
             } else {
-            	moveToLocationClearIfStuck(averageAlliesPos);
+            	moveToLocationClearIfStuck(averageAlliesNoScouts);
             }
         }
     }
@@ -259,7 +266,7 @@ public class ArchonActor extends RobotActor {
     }
 
     public boolean hostilesNearby() {
-        if(enemiesNum+zombiesNum>0 && nearestHostileDist<=9) {
+        if(nearestHostilePos!=null && nearestHostileDist<=9) {
             return true;
         }
         return false;
