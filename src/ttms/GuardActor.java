@@ -16,7 +16,6 @@ public class GuardActor extends RobotActor {
 	public GuardActor(RobotController rc) throws GameActionException {
         super(rc);
     }
-
 	
 	public void act() throws GameActionException {
         rc.setIndicatorString(0, "SOLDIER ACTOR");
@@ -28,6 +27,7 @@ public class GuardActor extends RobotActor {
             countNearbyRobots();
             findAverageAlliesPos();
             findNearestHostilePos();
+            findAverageAlliesNoScouts();
             
             readBroadcasts();
             
@@ -88,7 +88,7 @@ public class GuardActor extends RobotActor {
 
         if(enemiesNum+zombiesNum>0) {
         	rc.broadcastSignal(myType.sensorRadiusSquared*2);
-        	if(alliesNum >= enemiesNum+zombiesNum || allyTurretsNum>0) {
+        	if(allyGuardsNum+allyTurretsNum >= enemiesNum+zombiesNum || allyTurretsNum>0) {
         		moveToLocationClearIfStuck(nearestHostilePos);
         	} else {
         		moveFromLocationClearIfStuck(nearestHostilePos);
@@ -101,11 +101,18 @@ public class GuardActor extends RobotActor {
         	} else if(nearestBroadcastAlly!=null) {
         		moveToLocationClearIfStuck(nearestBroadcastAlly);
         	} else {
-        		if(alliesNum >= 20) {
-        			moveFromLocationClear(averageAlliesPos);
+        		
+        		findFarthestTurret();
+        		if(farthestTurretPos!=null) {
+        			moveToLocationClearIfStuck(farthestTurretPos);
         		} else {
-        			moveToLocationClearIfStuck(averageAlliesPos);
+        			moveToLocationClearIfStuck(averageAlliesNoScouts);
         		}
+//        		if(alliesNum >= 20) {
+//        			moveFromLocationClear(averageAlliesPos);
+//        		} else {
+        			
+//        		}
         		
         	}
         }

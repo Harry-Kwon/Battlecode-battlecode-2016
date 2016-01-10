@@ -9,6 +9,9 @@ public class ScoutActor extends RobotActor {
 
     MapLocation spawnLocation = null;
     RobotType myType;
+    
+    MapLocation bestIdleSignal;
+	int bestIdleCount;
 
     public ScoutActor(RobotController rc) throws GameActionException {
         super(rc);
@@ -26,6 +29,7 @@ public class ScoutActor extends RobotActor {
             countNearbyRobots();
             findNearestHostilePos();
             findAverageAlliesPos();
+            findAverageAlliesNoScouts();
 
             /*if(rc.getHealth() < 70) {
                 findNearestArchon(myLocation);
@@ -33,121 +37,51 @@ public class ScoutActor extends RobotActor {
             }*/
 
             if(enemiesNum+zombiesNum > 0) {
-                rc.broadcastMessageSignal(0, nearestHostilePos.x+1000*nearestHostilePos.y, myType.sensorRadiusSquared*2);
+                rc.broadcastMessageSignal(0, nearestHostilePos.x+1000*nearestHostilePos.y, myType.sensorRadiusSquared*33);
                 /*for(RobotInfo info : enemiesInfo) {
                     rc.broadcastMessageSignal(0, info.location.x+1000*info.location.y, 106);
                 }*/
-            } 
+            } else {
+            	if(rc.getRoundNum()%2==0) {
+            		rc.broadcastMessageSignal(alliesNum*10+1, averageAlliesNoScouts.x+1000*averageAlliesNoScouts.y, myType.sensorRadiusSquared*33);
+            	} else {
+//            		getBestIdleSignal();
+//            		if(bestIdleSignal!=null) {
+//            			rc.broadcastMessageSignal(1, bestIdleSignal.x+1000*bestIdleSignal.y, myType.sensorRadiusSquared*33);
+//            		}
+            		
+            	}
+            	
+            }
 
             move();
-
-            /*if(nearestHostileDist <= 3) {
-                moveFromLocationClearIfStuck(nearestHostilePos);
-            } else if(nearestHostileDist >8) {
-                if(!myLocation.equals(spawnLocation)) {
-                    moveToLocationClearIfStuck(spawnLocation);
-                }
-            }*/
-
-            //moveToBorder();
 
             lastLocation = new MapLocation(myLocation.x, myLocation.y);
 
             Clock.yield();
         }
     }
+    
+    public void getBestIdleSignal() {
+    	bestIdleSignal = null;
+    	bestIdleCount = 0;
+    	
+    	
+    }
 
     public void move() throws GameActionException {
         findNearestTurret();
         findNearestScout();
 
-        if(myLocation.distanceSquaredTo(averageAlliesPos)>16) {
-            moveToLocationClearIfStuck(averageAlliesPos);
+        if(myLocation.distanceSquaredTo(averageAlliesNoScouts)>16) {
+            moveToLocationClearIfStuck(averageAlliesNoScouts);
         } else {
             if(nearestScoutPos!=null) {
                 moveFromLocationClearIfStuck(nearestScoutPos);
             } else {
-                moveFromLocationClearIfStuck(averageAlliesPos);
+                moveFromLocationClearIfStuck(averageAlliesNoScouts);
             }
         }
-    }
-
-    public void findNearestArchon(MapLocation check) throws GameActionException {
-        nearestArchonPos = myLocation;
-        nearestArchonDist = 9999999;
-        for(RobotInfo info:alliesInfo) {
-            if(info.type==RobotType.ARCHON) {
-                int dist = check.distanceSquaredTo(info.location);
-                if(dist < nearestArchonDist) {
-                    nearestArchonDist = dist;
-                    nearestArchonPos = new MapLocation(info.location.x, info.location.y);
-                }
-            }
-        }
-    }
-
-    public void moveToBorder() throws GameActionException {
-
-        //findNearestTurret(myLocation);
-        findNearestScout(myLocation);
-
-        
-
-        if(nearestTurretDist <=3) {
-            if(nearestTurretPos!=null) {
-                moveFromLocationClearIfStuck(averageAlliesPos);
-            }
-        } else {
-            if(nearestTurretDist>5) {
-                if(nearestTurretPos!=null) {
-                    moveToLocationClearIfStuck(nearestTurretPos);
-                }
-            } else {
-                if(nearestScoutDist <=9) {
-                    moveFromLocationClearIfStuck(nearestScoutPos);
-                } else {
-                    moveToLocationClearIfStuck(nearestTurretPos);
-                }
-            }
-        }
-    }
-
-    public void findNearestScout(MapLocation check) throws GameActionException {
-        nearestScoutPos = myLocation;
-        nearestScoutDist = 9999999;
-        for(RobotInfo info:alliesInfo) {
-            if(info.type==RobotType.SCOUT) {
-                int dist = check.distanceSquaredTo(info.location);
-                if(dist < nearestScoutDist) {
-                    nearestScoutDist = dist;
-                    nearestScoutPos = new MapLocation(info.location.x, info.location.y);
-                }
-            }
-        }
-    }
-
-    public boolean isInsideBorder(MapLocation check) throws GameActionException {
-        boolean insideBorder = true;
-
-        Direction dir = Direction.NORTH_EAST;
-        if((check.x+check.y)%2==0) {
-            dir = Direction.NORTH;
-        }
-
-        for(int i=0; i<4; i++) {
-            MapLocation loc = check.add(dir);
-            if(rc.onTheMap(loc)) {
-                RobotInfo info = rc.senseRobotAtLocation(loc);
-                if(info==null || !info.team.equals(myTeam)) {
-                    insideBorder = false;
-                    break;
-                }
-            }
-
-            dir = dir.rotateRight().rotateRight();
-        }
-
-        return(insideBorder);
     }
 
 }

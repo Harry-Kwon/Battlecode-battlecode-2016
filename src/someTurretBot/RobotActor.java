@@ -1,4 +1,4 @@
-package ttms;
+package someTurretBot;
 
 import battlecode.common.*;
 
@@ -20,7 +20,10 @@ public class RobotActor {
     }
 
     public void attack(MapLocation loc) throws GameActionException {
-        if(rc.canAttackLocation(loc) && rc.isWeaponReady()) {
+        if(!rc.isWeaponReady()) {
+            return;
+        }
+        if(rc.canAttackLocation(loc)) {
             rc.attackLocation(loc);
         }
 
@@ -37,7 +40,6 @@ public class RobotActor {
 
     int allyTurretsNum;
     int allyScoutsNum;
-    int allyGuardsNum;
 
     int nearestHostileDist;
     MapLocation nearestHostilePos;
@@ -59,25 +61,6 @@ public class RobotActor {
         }
 
         averageAlliesPos = new MapLocation(cX/alliesNum, cY/alliesNum);
-    }
-    
-    MapLocation averageAlliesNoScouts;
-    
-    public void findAverageAlliesNoScouts() throws GameActionException {
-    	int cX = myLocation.x;
-    	int cY = myLocation.y;
-    	int points = 1;
-    	for(RobotInfo info : alliesInfo) {
-    		if(info.type!=RobotType.SCOUT) {
-    			cX+=info.location.x;
-    			cY+=info.location.y;
-    			points++;
-    		}
-    	}
-    	
-    	averageAlliesNoScouts = new MapLocation(cX/points, cY/points);
-    	
-    	
     }
 
     public void findNearestHostilePos() throws GameActionException {
@@ -126,7 +109,6 @@ public class RobotActor {
 
         allyTurretsNum = 0;
         allyScoutsNum = 0;
-        allyGuardsNum = 0;
         for(int i=0; i<alliesNum; i++) {
             alliesPos[i] = alliesInfo[i].location;
             switch(alliesInfo[i].type) {
@@ -136,9 +118,6 @@ public class RobotActor {
                 case TURRET:
                     allyTurretsNum++;
                     break;
-                case GUARD:
-                	allyGuardsNum++;
-                	break;
                 default:
                     break;
             }
@@ -148,7 +127,7 @@ public class RobotActor {
             allyScoutsNum=0;
             for(int i=0; i<alliesNum; i++) {
                 if(alliesInfo[i].type==RobotType.SCOUT) {
-                    if(myLocation.distanceSquaredTo(alliesPos[i]) <= 25) {
+                    if(myLocation.distanceSquaredTo(alliesPos[i]) <= 16) {
                         allyScoutsNum++;
                     }
                 }
@@ -172,60 +151,10 @@ public class RobotActor {
             }
         }
     }
-    
-    MapLocation farthestTurretPos;
-    int farthestTurretDist;
-
-    public void findFarthestTurret() {
-    	farthestTurretDist=9999999;
-    	farthestTurretPos=null;
-        for(RobotInfo info : alliesInfo) {
-            if(info.type == RobotType.TURRET) {
-                int dist = myLocation.distanceSquaredTo(info.location);
-                if(dist > farthestTurretDist) {
-                	farthestTurretDist = dist;
-                	farthestTurretPos = new MapLocation(info.location.x, info.location.y);
-                }
-            }
-        }
-    }
-
-    MapLocation nearestScoutPos;
-    int nearestScoutDist;
-
-    public void findNearestScout() {
-        nearestScoutDist=9999999;
-        nearestScoutPos=null;
-        for(RobotInfo info : alliesInfo) {
-            if(info.type == RobotType.SCOUT) {
-                int dist = myLocation.distanceSquaredTo(info.location);
-                if(dist < nearestScoutDist) {
-                    nearestScoutDist = dist;
-                    nearestScoutPos = new MapLocation(info.location.x, info.location.y);
-                }
-            }
-        }
-    }
-    
-    MapLocation nearestAllyPos;
-    int nearestAllyDist;
-    
-    public void findNearestAlly() {
-        nearestAllyDist=9999999;
-        nearestAllyPos=null;
-        for(RobotInfo info : alliesInfo) {
-            int dist = myLocation.distanceSquaredTo(info.location);
-            if(dist < nearestAllyDist) {
-                nearestAllyDist = dist;
-                nearestAllyPos = new MapLocation(info.location.x, info.location.y);
-            }
-        }
-    }
 
     /*****navigation*******/
 
     Direction lastDirection = null;
-    Direction directionBias = Direction.NORTH;
 
     public void moveInOppLastDirection() throws GameActionException {
         if(!rc.isCoreReady()) {
@@ -250,32 +179,11 @@ public class RobotActor {
 
     }
 
-
-    public void moveFromLocationClear(MapLocation target) throws GameActionException {
-        Direction dir = myLocation.directionTo(target).opposite();
-
-        if(dir == Direction.OMNI) {
-            dir = directionBias;
-        }
-
-        moveInDirectionClear(dir);
-    }
-
-    public void moveToLocationClear(MapLocation target) throws GameActionException {
-        Direction dir = myLocation.directionTo(target);
-
-        if(dir == Direction.OMNI) {
-            dir = directionBias;
-        }
-
-        moveInDirectionClear(dir);
-    }
-    
     public void moveFromLocation(MapLocation target) throws GameActionException {
         Direction dir = myLocation.directionTo(target).opposite();
 
         if(dir == Direction.OMNI) {
-            dir = directionBias;
+            dir = Direction.NORTH;
         }
 
         moveInDirection(dir);
@@ -285,7 +193,7 @@ public class RobotActor {
         Direction dir = myLocation.directionTo(target);
 
         if(dir == Direction.OMNI) {
-            dir = directionBias;
+            dir = Direction.NORTH;
         }
 
         moveInDirection(dir);
@@ -295,7 +203,7 @@ public class RobotActor {
         Direction dir = myLocation.directionTo(target).opposite();
 
         if(dir == Direction.OMNI) {
-            dir = directionBias;
+            dir = Direction.NORTH;
         }
 
         moveInDirectionClearIfStuck(dir);
@@ -305,43 +213,12 @@ public class RobotActor {
         Direction dir = myLocation.directionTo(target);
 
         if(dir == Direction.OMNI) {
-            dir = directionBias;
+            dir = Direction.NORTH;
         }
 
         moveInDirectionClearIfStuck(dir);
     }
-    
-    public void moveInDirectionClear(Direction d) throws GameActionException {
-    	if(!rc.isCoreReady()) {
-            return;
-        }
 
-        //not sure if Direction is passed by reference
-        Direction dir = d;
-        for(int i=0; i<8;i++) {
-            Direction thisDir = nextDir(dir, i);
-            MapLocation loc = myLocation.add(thisDir);
-            
-            if(!rc.onTheMap(myLocation.add(thisDir))) {
-        		directionBias = directionBias.opposite();
-        	}
-
-            if(rc.senseRobotAtLocation(loc)==null && rc.onTheMap(loc)) {
-            	if(rc.senseRubble((loc)) < 50) {
-            		if(rc.canMove(thisDir)) {
-            			rc.move(thisDir);
-                        lastDirection = thisDir;
-                        return;
-            		}
-            	} else {
-            		rc.clearRubble(thisDir);
-            		return;
-            	}
-                
-            }
-        }
-    }
-    
     public void moveInDirectionClearIfStuck(Direction d) throws GameActionException {
 
         if(!rc.isCoreReady()) {
@@ -352,12 +229,8 @@ public class RobotActor {
 
         //not sure if Direction is passed by reference
         Direction dir = d;
-        for(int i=0; i<5;i++) {
+        for(int i=0; i<8;i++) {
             Direction thisDir = nextDir(dir, i);
-            
-            if(!rc.onTheMap(myLocation.add(thisDir))) {
-        		directionBias = directionBias.opposite();
-        	}
 
             if(safeToMove(thisDir)) {
                 rc.move(thisDir);
@@ -368,12 +241,12 @@ public class RobotActor {
         }
 
         if(!moved) {
-            for(int i=0; i<5; i++) {
-            	Direction thisDir = nextDir(dir, i);
-                if(rc.senseRobotAtLocation(myLocation.add(thisDir))==null && rc.senseRubble(myLocation.add(thisDir)) > 50.0) {
-                    rc.clearRubble(thisDir);
+            for(int i=0; i<8; i++) {
+                if(rc.senseRobotAtLocation(myLocation.add(dir))==null && rc.senseRubble(myLocation.add(dir)) > 50.0) {
+                    rc.clearRubble(dir);
                     return;
                 }
+                dir = dir.rotateRight();
             }
         }
     }
@@ -421,10 +294,6 @@ public class RobotActor {
         Direction dir = d;
        for(int i=0; i<8;i++) {
             Direction thisDir = nextDir(dir, i);
-            
-            if(!rc.onTheMap(myLocation.add(thisDir))) {
-        		directionBias = directionBias.opposite();
-        	}
 
             if(safeToMove(thisDir)) {
                 rc.move(thisDir);
@@ -434,13 +303,8 @@ public class RobotActor {
     }
 
     public void moveInSomeDirection() throws GameActionException {
-        Direction dir = directionBias;
+        Direction dir = Direction.NORTH;
         for(int i=0; i<8;i++) {
-        	
-        	if(!rc.onTheMap(myLocation.add(dir))) {
-        		directionBias = directionBias.opposite();
-        	}
-        	
             if(safeToMove(dir)) {
                 rc.move(dir);
                 break;

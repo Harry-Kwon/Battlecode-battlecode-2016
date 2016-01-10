@@ -35,6 +35,8 @@ public class MobileTurretActor extends RobotActor {
             findNearestHostilePos();
             readBroadcasts();
             findNearestAttackableEnemy();
+            findAverageAlliesNoScouts();
+            
             if(nearestAttackableEnemy!=null) {
             	rc.setIndicatorString(0, "TARGET"+ nearestAttackableEnemy.x+", "+nearestAttackableEnemy.y);
             }
@@ -131,7 +133,7 @@ public class MobileTurretActor extends RobotActor {
 	public void moveTurret() throws GameActionException {
 		if(enemiesNum+zombiesNum>0) {
 			rc.broadcastSignal(myType.sensorRadiusSquared*2);
-			if(alliesNum >= enemiesNum+zombiesNum) {
+			if(allyGuardsNum+allyTurretsNum >= enemiesNum+zombiesNum) {
 				return;
 			} else {
 				rc.pack();
@@ -152,7 +154,7 @@ public class MobileTurretActor extends RobotActor {
 
         if(enemiesNum+zombiesNum>0) {
         	rc.broadcastSignal(myType.sensorRadiusSquared*2);
-        	if(alliesNum>=enemiesNum+zombiesNum) {
+        	if(allyGuardsNum+allyTurretsNum>=enemiesNum+zombiesNum) {
         		rc.unpack();
         	} else {
         		moveFromLocation(nearestHostilePos);
@@ -168,7 +170,7 @@ public class MobileTurretActor extends RobotActor {
         	} else if(nearestBroadcastAlly!=null) {
         		moveToLocation(nearestBroadcastAlly);
         	} else {
-        		moveToLocation(averageAlliesPos);
+        		moveToLocation(averageAlliesNoScouts);
         	}
         }
     }
