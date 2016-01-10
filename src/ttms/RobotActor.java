@@ -41,6 +41,9 @@ public class RobotActor {
 
     int nearestHostileDist;
     MapLocation nearestHostilePos;
+    
+    int nearestDenDist;
+    MapLocation nearestDenPos;
 
     MapLocation averageAlliesPos;
 
@@ -82,21 +85,41 @@ public class RobotActor {
 
     public void findNearestHostilePos() throws GameActionException {
         nearestHostileDist = 999999999;
-        nearestHostilePos = myLocation;
-        for(MapLocation loc : enemiesPos) {
-            int dist = myLocation.distanceSquaredTo(loc);
-            if(dist < nearestHostileDist) {
-                nearestHostileDist = dist;
-                nearestHostilePos = new MapLocation(loc.x, loc.y);
-            }
+        nearestHostilePos = null;
+        
+        nearestDenDist = 999999999;
+        nearestDenPos = null;
+        
+        for(RobotInfo info : enemiesInfo) {
+        	MapLocation loc = info.location;
+        	int dist = myLocation.distanceSquaredTo(loc);
+        	if(info.type != RobotType.ZOMBIEDEN) {
+                if(dist < nearestHostileDist) {
+                    nearestHostileDist = dist;
+                    nearestHostilePos = new MapLocation(loc.x, loc.y);
+                }
+        	} else {
+        		if(dist < nearestDenDist) {
+        			nearestDenDist = dist;
+        			nearestDenPos = new MapLocation(loc.x, loc.y);
+        		}
+        	}
         }
-
-        for(MapLocation loc : zombiesPos) {
-            int dist = myLocation.distanceSquaredTo(loc);
-            if(dist < nearestHostileDist) {
-                nearestHostileDist = dist;
-                nearestHostilePos = new MapLocation(loc.x, loc.y);
-            }
+        
+        for(RobotInfo info : zombiesInfo) {
+        	MapLocation loc = info.location;
+        	int dist = myLocation.distanceSquaredTo(loc);
+        	if(info.type != RobotType.ZOMBIEDEN) {
+                if(dist < nearestHostileDist) {
+                    nearestHostileDist = dist;
+                    nearestHostilePos = new MapLocation(loc.x, loc.y);
+                }
+        	} else {
+        		if(dist < nearestDenDist) {
+        			nearestDenDist = dist;
+        			nearestDenPos = new MapLocation(loc.x, loc.y);
+        		}
+        	}
         }
     }
 

@@ -260,7 +260,7 @@ public class ArchonActor extends RobotActor {
     }
 
     public boolean hostilesNearby() {
-        if(enemiesNum+zombiesNum>0 && nearestHostileDist<=9) {
+        if(nearestHostilePos!=null && nearestHostileDist<=9) {
             return true;
         }
         return false;

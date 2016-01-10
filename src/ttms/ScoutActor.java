@@ -36,23 +36,20 @@ public class ScoutActor extends RobotActor {
                 moveToLocationClearIfStuck(nearestArchonPos);
             }*/
 
-            if(enemiesNum+zombiesNum > 0) {
-                rc.broadcastMessageSignal(0, nearestHostilePos.x+1000*nearestHostilePos.y, myType.sensorRadiusSquared*33);
+            if(nearestHostilePos != null) {
+                rc.broadcastMessageSignal(0, nearestHostilePos.x+1000*nearestHostilePos.y, myType.sensorRadiusSquared*2);
                 /*for(RobotInfo info : enemiesInfo) {
                     rc.broadcastMessageSignal(0, info.location.x+1000*info.location.y, 106);
                 }*/
-            } else {
-            	if(rc.getRoundNum()%2==0) {
-            		rc.broadcastMessageSignal(alliesNum*10+1, averageAlliesNoScouts.x+1000*averageAlliesNoScouts.y, myType.sensorRadiusSquared*33);
-            	} else {
-//            		getBestIdleSignal();
-//            		if(bestIdleSignal!=null) {
-//            			rc.broadcastMessageSignal(1, bestIdleSignal.x+1000*bestIdleSignal.y, myType.sensorRadiusSquared*33);
-//            		}
-            		
-            	}
-            	
+            } else if(nearestDenPos != null) {
+            	rc.broadcastMessageSignal(1, nearestDenPos.x+1000*nearestDenPos.y, myType.sensorRadiusSquared*2);
             }
+            
+//            findNearestTurret();
+//            
+//            if(nearestTurretPos!=null) {
+//            	
+//            }
 
             move();
 
@@ -73,7 +70,7 @@ public class ScoutActor extends RobotActor {
         findNearestTurret();
         findNearestScout();
 
-        if(myLocation.distanceSquaredTo(averageAlliesNoScouts)>16) {
+        if(myLocation.distanceSquaredTo(averageAlliesNoScouts)>8) {
             moveToLocationClearIfStuck(averageAlliesNoScouts);
         } else {
             if(nearestScoutPos!=null) {
