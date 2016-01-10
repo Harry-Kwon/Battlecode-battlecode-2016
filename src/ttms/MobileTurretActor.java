@@ -202,9 +202,9 @@ public class MobileTurretActor extends RobotActor {
         	} else if(nearestBroadcastAlly!=null) {
         		moveToLocation(nearestBroadcastAlly);
         	} else if(nearestDenPos!=null) { 
-        		moveToLocationClearIfStuck(nearestDenPos);
+        		moveToLocation(nearestDenPos);
         	} else if(nearestBroadcastDen!=null) {
-        		moveToLocationClearIfStuck(nearestBroadcastDen);
+        		moveToLocation(nearestBroadcastDen);
         	} else {
         		if(alliesNum >= 20) {
         			moveFromLocation(averageAlliesNoScouts);
