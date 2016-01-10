@@ -20,10 +20,7 @@ public class RobotActor {
     }
 
     public void attack(MapLocation loc) throws GameActionException {
-        if(!rc.isWeaponReady()) {
-            return;
-        }
-        if(rc.canAttackLocation(loc)) {
+        if(rc.canAttackLocation(loc) && rc.isWeaponReady()) {
             rc.attackLocation(loc);
         }
 

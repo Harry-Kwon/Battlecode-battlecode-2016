@@ -92,7 +92,11 @@ public class ArchonActor extends RobotActor {
         if(allyScoutsNum==0) {
             typeToSpawn = RobotType.SCOUT;
         } else {
-            typeToSpawn = RobotType.TURRET;
+        	if(allyGuardsNum < allyTurretsNum*2) {
+        		typeToSpawn = RobotType.GUARD;
+        	} else {
+        		typeToSpawn = RobotType.TURRET;
+        	}
         }
        
     }
@@ -238,13 +242,14 @@ public class ArchonActor extends RobotActor {
                 MapLocation loc = new MapLocation(myLocation.x+x, myLocation.y+y);
 
                 if(rc.canSenseLocation(loc) && rc.onTheMap(loc) && rc.senseRobotAtLocation(loc)==null && rc.senseRubble(loc)<=50.0) {
-                    if( (loc.y/2+loc.x)%3==0 && loc.y%2==0) {
-                        int dist = averageAlliesPos.distanceSquaredTo(loc);
-                        if(dist < bestDist) {
+//                    if( (loc.y/2+loc.x)%3==0 && loc.y%2==0) {
+                        //int dist = averageAlliesPos.distanceSquaredTo(loc);
+                        int dist = myLocation.distanceSquaredTo(loc);
+                		if(dist < bestDist) {
                             bestDist=dist;
                             bestLoc=new MapLocation(loc.x, loc.y);
-                        }    
-                    }
+                        }
+//                    }
                     
                 }
 

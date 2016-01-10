@@ -59,12 +59,8 @@ public class ScoutActor extends RobotActor {
         findNearestTurret();
         findNearestScout();
 
-        if(nearestTurretDist>8) {
-            if(nearestTurretPos!=null) {
-                moveToLocationClearIfStuck(nearestTurretPos);
-            } else {
-                moveToLocationClearIfStuck(averageAlliesPos);
-            }
+        if(myLocation.distanceSquaredTo(averageAlliesPos)>16) {
+            moveToLocationClearIfStuck(averageAlliesPos);
         } else {
             if(nearestScoutPos!=null) {
                 moveFromLocationClearIfStuck(nearestScoutPos);
