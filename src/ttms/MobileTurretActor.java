@@ -24,6 +24,8 @@ public class MobileTurretActor extends RobotActor {
 	
 	Signal[] signals;
 	
+	int timer = 0;
+	
 	public void act() throws GameActionException {
         myTeam = rc.getTeam();
 
@@ -153,6 +155,7 @@ public class MobileTurretActor extends RobotActor {
 	
 	public void moveTurret() throws GameActionException {
 		if(nearestHostilePos!=null) {
+			timer = -1;
 			rc.broadcastSignal(myType.sensorRadiusSquared*2);
 			if(allyGuardsNum+allyTurretsNum >= enemiesNum+zombiesNum) {
 				return;
@@ -160,12 +163,19 @@ public class MobileTurretActor extends RobotActor {
 				rc.pack();
 			}
 		} else if(nearestAttackableEnemy!=null) {
+			timer = -1;
 			return;
 		} else if(rc.isCoreReady()){
+			if(timer==-1) {
+				timer=0;
+			} else {
+				timer++;
+			}
 			
-			//if(allyGuardsNum == 0) {
+			if(timer>=5) {
 				rc.pack();
-			//}
+				timer = -1;
+			}
 		}
 		
 	}
