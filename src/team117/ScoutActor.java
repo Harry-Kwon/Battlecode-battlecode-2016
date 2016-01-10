@@ -4,24 +4,11 @@ import battlecode.common.*;
 
 public class ScoutActor extends RobotActor {
 
-    boolean[] bcHash = new boolean[1000000];
-    int[] hashedValues = new int[1000000];
-    int hashedNum = 0;
-
-    MapLocation nearestTurretPos;
-    int nearestTurretDist;
-
-    MapLocation nearestScoutPos;
-    int nearestScoutDist;
-
     MapLocation nearestArchonPos;
     int nearestArchonDist;
 
-    int myID;
-
-    int header=-1;
-    int msg;
-    int range;
+    MapLocation spawnLocation = null;
+    RobotType myType;
 
     public ScoutActor(RobotController rc) throws GameActionException {
         super(rc);
@@ -29,48 +16,40 @@ public class ScoutActor extends RobotActor {
 
     public void act() throws GameActionException {
         myTeam = rc.getTeam();
-        myID = rc.getID();
+        myType = rc.getType();
 
+        spawnLocation = rc.getLocation();
 
         while(true) {
-            /*if(rc.getRoundNum()%50==0) {
-                for(int i=0; i<hashedNum; i++) {
-                    bcHash[hashedValues[i]]=false;
-                }
-                hashedValues = new int[1000000];
-                hashedNum=0;
-            }*/
-
             myLocation = rc.getLocation();
 
             countNearbyRobots();
             findNearestHostilePos();
             findAverageAlliesPos();
 
+            /*if(rc.getHealth() < 70) {
+                findNearestArchon(myLocation);
+                moveToLocationClearIfStuck(nearestArchonPos);
+            }*/
+
             if(enemiesNum+zombiesNum > 0) {
-                RobotType type = rc.senseRobotAtLocation(nearestHostilePos).type;
-                header = 0;
-                msg = nearestHostilePos.x+1000*nearestHostilePos.y;
-                range = 106;
-
-                for(RobotInfo info : enemiesInfo) {
-                    if(info.type==RobotType.TURRET) {
-                        msg = info.location.x+1000*info.location.y;
-                        range = 10000;
-                        break;
-                    }
-                }
-
-                if(type==RobotType.TURRET) {
-                    header = 1;
-                    range = 10000;
-                }
-                rc.broadcastMessageSignal(header, msg, range);
-            }
+                rc.broadcastMessageSignal(0, nearestHostilePos.x+1000*nearestHostilePos.y, myType.sensorRadiusSquared*2);
+                /*for(RobotInfo info : enemiesInfo) {
+                    rc.broadcastMessageSignal(0, info.location.x+1000*info.location.y, 106);
+                }*/
+            } 
 
             move();
 
-            //extendBroadcastSignals();
+            /*if(nearestHostileDist <= 3) {
+                moveFromLocationClearIfStuck(nearestHostilePos);
+            } else if(nearestHostileDist >8) {
+                if(!myLocation.equals(spawnLocation)) {
+                    moveToLocationClearIfStuck(spawnLocation);
+                }
+            }*/
+
+            //moveToBorder();
 
             lastLocation = new MapLocation(myLocation.x, myLocation.y);
 
@@ -78,44 +57,19 @@ public class ScoutActor extends RobotActor {
         }
     }
 
-    public void extendBroadcastSignals() throws GameActionException {
-        Signal[] signals = rc.emptySignalQueue();
-        rc.setIndicatorString(0, "SIGNALS: "+signals.length);
-        MapLocation target = null;
-
-        for(Signal s : signals) {
-            if(s.getTeam() != myTeam) {
-                continue;
-            }
-            int[] msg = s.getMessage();
-            if(msg==null || bcHash[msg[1]]) {
-                continue;
-            }
-            bcHash[msg[1]]=true;
-            hashedValues[hashedNum++]=msg[1];
-            rc.broadcastMessageSignal(s.getRobotID(), msg[1], 106);
-        }
-
-        if(target != null) {
-            attack(target);
-        }
-    }
-
     public void move() throws GameActionException {
-        findNearestScout(myLocation);
+        findNearestTurret();
+        findNearestScout();
 
-        if(nearestHostileDist <=36) {
-            moveFromLocationClearIfStuck(nearestHostilePos);
-            return;
+        if(myLocation.distanceSquaredTo(averageAlliesPos)>16) {
+            moveToLocationClearIfStuck(averageAlliesPos);
+        } else {
+            if(nearestScoutPos!=null) {
+                moveFromLocationClearIfStuck(nearestScoutPos);
+            } else {
+                moveFromLocationClearIfStuck(averageAlliesPos);
+            }
         }
-
-        moveFromLocationClearIfStuck(averageAlliesPos);
-
-        // if(nearestScoutPos!= null) {
-        //     moveFromLocationClearIfStuck(nearestScoutPos);
-        // } else {
-        //     moveInLastDirection();
-        // }
     }
 
     public void findNearestArchon(MapLocation check) throws GameActionException {
@@ -132,8 +86,34 @@ public class ScoutActor extends RobotActor {
         }
     }
 
+    public void moveToBorder() throws GameActionException {
+
+        //findNearestTurret(myLocation);
+        findNearestScout(myLocation);
+
+        
+
+        if(nearestTurretDist <=3) {
+            if(nearestTurretPos!=null) {
+                moveFromLocationClearIfStuck(averageAlliesPos);
+            }
+        } else {
+            if(nearestTurretDist>5) {
+                if(nearestTurretPos!=null) {
+                    moveToLocationClearIfStuck(nearestTurretPos);
+                }
+            } else {
+                if(nearestScoutDist <=9) {
+                    moveFromLocationClearIfStuck(nearestScoutPos);
+                } else {
+                    moveToLocationClearIfStuck(nearestTurretPos);
+                }
+            }
+        }
+    }
+
     public void findNearestScout(MapLocation check) throws GameActionException {
-        nearestScoutPos = null;
+        nearestScoutPos = myLocation;
         nearestScoutDist = 9999999;
         for(RobotInfo info:alliesInfo) {
             if(info.type==RobotType.SCOUT) {
@@ -144,6 +124,30 @@ public class ScoutActor extends RobotActor {
                 }
             }
         }
+    }
+
+    public boolean isInsideBorder(MapLocation check) throws GameActionException {
+        boolean insideBorder = true;
+
+        Direction dir = Direction.NORTH_EAST;
+        if((check.x+check.y)%2==0) {
+            dir = Direction.NORTH;
+        }
+
+        for(int i=0; i<4; i++) {
+            MapLocation loc = check.add(dir);
+            if(rc.onTheMap(loc)) {
+                RobotInfo info = rc.senseRobotAtLocation(loc);
+                if(info==null || !info.team.equals(myTeam)) {
+                    insideBorder = false;
+                    break;
+                }
+            }
+
+            dir = dir.rotateRight().rotateRight();
+        }
+
+        return(insideBorder);
     }
 
 }

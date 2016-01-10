@@ -17,14 +17,17 @@ public class RobotPlayer {
                     actor = new SoldierActor(rc);
                     break;
                 case TURRET:
-                    actor = new TurretActor(rc);
+                    actor = new MobileTurretActor(rc);
                     break;
+                case TTM:
+                	actor = new MobileTurretActor(rc);
+                	break;
                 case SCOUT:
                     actor = new ScoutActor(rc);
                     break;
                 case GUARD:
-                    actor = new GuardActor(rc);
-                    break;
+                	actor = new GuardActor(rc);
+                	break;
                 default:
                     actor = new RobotActor(rc);
                     break;
