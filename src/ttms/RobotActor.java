@@ -40,6 +40,7 @@ public class RobotActor {
 
     int allyTurretsNum;
     int allyScoutsNum;
+    int allyGuardsNum;
 
     int nearestHostileDist;
     MapLocation nearestHostilePos;
@@ -109,6 +110,7 @@ public class RobotActor {
 
         allyTurretsNum = 0;
         allyScoutsNum = 0;
+        allyGuardsNum = 0;
         for(int i=0; i<alliesNum; i++) {
             alliesPos[i] = alliesInfo[i].location;
             switch(alliesInfo[i].type) {
@@ -118,6 +120,9 @@ public class RobotActor {
                 case TURRET:
                     allyTurretsNum++;
                     break;
+                case GUARD:
+                	allyGuardsNum++;
+                	break;
                 default:
                     break;
             }
@@ -127,7 +132,7 @@ public class RobotActor {
             allyScoutsNum=0;
             for(int i=0; i<alliesNum; i++) {
                 if(alliesInfo[i].type==RobotType.SCOUT) {
-                    if(myLocation.distanceSquaredTo(alliesPos[i]) <= 16) {
+                    if(myLocation.distanceSquaredTo(alliesPos[i]) <= 25) {
                         allyScoutsNum++;
                     }
                 }
