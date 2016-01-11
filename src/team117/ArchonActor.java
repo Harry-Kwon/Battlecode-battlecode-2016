@@ -280,7 +280,7 @@ public class ArchonActor extends RobotActor {
 	            	moveToLocationClearIfStuck(nearestBroadcastAlly);
 	            } else if(nearestBroadcastDen!=null) {
 	            	moveToLocationClearIfStuck(nearestBroadcastDen);
-	            } else if(savedRally!=null && myLocation.distanceSquaredTo(savedRally)>15) {
+	            } else if(savedRally!=null && myLocation.distanceSquaredTo(savedRally)>225) {
 	            	moveToLocationClearIfStuck(savedRally);
 	            } else {
 	            	moveToLocationClearIfStuck(averageAlliesNoScouts);

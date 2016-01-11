@@ -133,7 +133,12 @@ public class GuardActor extends RobotActor {
             		moveToLocationClearIfStuck(nearestTurretPos);
         		} 	
         	} else {
-        		moveToLocationClearIfStuck(nearestHostilePos);
+        		if(savedRally!=null) {
+        			moveToLocationClearIfStuck(savedRally);
+        		} else {
+        			moveToLocationClearIfStuck(nearestHostilePos);
+        		}
+        		
         	}
         	
         } else {
