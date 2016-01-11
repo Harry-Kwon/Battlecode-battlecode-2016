@@ -138,7 +138,7 @@ public class ArchonActor extends RobotActor {
         if(allyScoutsNum==0) {
             typeToSpawn = RobotType.SCOUT;
         } else {
-        	if(allyGuardsNum < allyTurretsNum*2) {
+        	if(allyGuardsNum*2 < (allyTurretsNum+allyTTMNum)*3) {
         		typeToSpawn = RobotType.GUARD;
         	} else {
         		typeToSpawn = RobotType.TURRET;
@@ -204,15 +204,21 @@ public class ArchonActor extends RobotActor {
         
         if(rc.hasBuildRequirements(typeToSpawn)) {
             buildActions();
-        } else if(!repairAllies()){
-            if(nearestBroadcastEnemy!=null) {
-            	moveToLocationClearIfStuck(nearestBroadcastEnemy);
-            } else if(nearestBroadcastAlly!=null) {
-            	moveToLocationClearIfStuck(nearestBroadcastAlly);
-            } else {
-            	moveToLocationClearIfStuck(averageAlliesNoScouts);
-            }
+        } else {
+        	findNearestTurret();
+        	if(nearestTurretDist>=13 && nearestTurretPos != null) {
+				moveToLocationClearIfStuck(nearestTurretPos);
+        	} else if(!repairAllies()){
+	            if(nearestBroadcastEnemy!=null) {
+	            	moveToLocationClearIfStuck(nearestBroadcastEnemy);
+	            } else if(nearestBroadcastAlly!=null) {
+	            	moveToLocationClearIfStuck(nearestBroadcastAlly);
+	            } else {
+	            	moveToLocationClearIfStuck(averageAlliesNoScouts);
+	            }
+	        }
         }
+        	
     }
     
     public void checkHealth() throws GameActionException {

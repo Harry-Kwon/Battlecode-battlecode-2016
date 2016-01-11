@@ -1,4 +1,4 @@
-package team117;
+package fortress;
 
 import battlecode.common.Clock;
 import battlecode.common.GameActionException;
@@ -19,6 +19,7 @@ public class GuardActor extends RobotActor {
     }
 	
 	public void act() throws GameActionException {
+        rc.setIndicatorString(0, "SOLDIER ACTOR");
         myTeam = rc.getTeam();
         myType = rc.getType();
 
@@ -111,19 +112,16 @@ public class GuardActor extends RobotActor {
 
         if(nearestHostilePos != null) {
         	rc.broadcastSignal(myType.sensorRadiusSquared*2);
-        	if(nearestTurretPos!=null) {
-        		if(nearestTurretDist < 13) {
-        			moveToLocationClearIfStuck(nearestHostilePos);
-        		} else {
-            		moveToLocationClearIfStuck(nearestTurretPos);
-        		} 	
-        	} else {
+        	if(allyGuardsNum+allyTurretsNum >= enemiesNum+zombiesNum || allyTurretsNum>0) {
         		moveToLocationClearIfStuck(nearestHostilePos);
+        	} else {
+        		moveFromLocationClearIfStuck(nearestHostilePos);
+        		
         	}
         	
         } else {
         	findNearestTurret();
-        	if(nearestTurretDist>=13 && nearestTurretPos != null) {
+        	if(nearestTurretDist>=20 && nearestTurretPos != null) {
 				moveToLocationClearIfStuck(nearestTurretPos);
         	} else if(nearestBroadcastEnemy!=null) {
         		moveToLocationClearIfStuck(nearestBroadcastEnemy);

@@ -1,4 +1,4 @@
-package team117;
+package fortress;
 
 import battlecode.common.*;
 
@@ -36,6 +36,14 @@ public class ScoutActor extends RobotActor {
                 moveToLocationClearIfStuck(nearestArchonPos);
             }*/
 
+            if(nearestHostilePos != null) {
+                rc.broadcastMessageSignal(0, nearestHostilePos.x+1000*nearestHostilePos.y, myType.sensorRadiusSquared*2);
+                /*for(RobotInfo info : enemiesInfo) {
+                    rc.broadcastMessageSignal(0, info.location.x+1000*info.location.y, 106);
+                }*/
+            } else if(nearestDenPos != null) {
+            	rc.broadcastMessageSignal(1, nearestDenPos.x+1000*nearestDenPos.y, myType.sensorRadiusSquared*2*40);
+            }
             
 //            findNearestTurret();
 //            
@@ -44,36 +52,11 @@ public class ScoutActor extends RobotActor {
 //            }
 
             move();
-            broadcastEnemies();
 
             lastLocation = new MapLocation(myLocation.x, myLocation.y);
 
             Clock.yield();
         }
-    }
-    
-    public void broadcastEnemies() throws GameActionException {
-    	int sent = 0;
-    	for(RobotInfo info : enemiesInfo) {
-    		rc.broadcastMessageSignal(0,  info.location.x+1000*info.location.y, myType.sensorRadiusSquared*2);
-    		sent++;
-    		if(sent>20) {
-    			return;
-    		}
-    	}
-    	
-    	for(RobotInfo info : zombiesInfo) {
-    		if(info.type==RobotType.ZOMBIEDEN) {
-    			rc.broadcastMessageSignal(1, info.location.x+1000*info.location.y, myType.sensorRadiusSquared*2);
-    		} else {
-    			rc.broadcastMessageSignal(0,  info.location.x+1000*info.location.y, myType.sensorRadiusSquared*2);
-    		}
-    		
-    		sent++;
-    		if(sent>20) {
-    			return;
-    		}
-    	}
     }
     
     public void getBestIdleSignal() {
@@ -86,7 +69,7 @@ public class ScoutActor extends RobotActor {
     public void move() throws GameActionException {
         findNearestTurret();
         findNearestScout();
-        
+
         if(myLocation.distanceSquaredTo(averageAlliesNoScouts)>8) {
             moveToLocationClearIfStuck(averageAlliesNoScouts);
         } else {
