@@ -10,7 +10,9 @@ public class ArchonActor extends RobotActor {
     
     MapLocation nearestBroadcastEnemy;
 	MapLocation nearestBroadcastAlly;
-
+	MapLocation nearestBroadcastDen;
+	MapLocation nearestBroadcastRally;
+	MapLocation savedRally;
     double lastHealth;
 
     RobotType typeToSpawn;
@@ -19,6 +21,9 @@ public class ArchonActor extends RobotActor {
     
     Signal[] signals;
     RobotType myType;
+    
+    boolean isCentral = false;
+    int sent = 0;
 
     public ArchonActor(RobotController rc) throws GameActionException {
         super(rc);
@@ -70,6 +75,10 @@ public class ArchonActor extends RobotActor {
         }
 
         central = archonPositions[bestArchon];
+        
+        if(myLocation.equals(central)) {
+        	isCentral = true;
+        }
     }
 
     public void updateRoundVars() throws GameActionException {
@@ -90,9 +99,13 @@ public class ArchonActor extends RobotActor {
     public void readBroadcasts() throws GameActionException {
         nearestBroadcastEnemy = null;
         nearestBroadcastAlly = null;
+        nearestBroadcastDen = null;
+        nearestBroadcastRally = null;
 
         int bestEnemyDist = 2000000;
         int bestAllyDist = 2000000;
+        int bestDenDist = 2000000;
+        int bestRallyDist = 2000000;
         
         for(Signal s : signals) {
             if(s.getTeam() != myTeam) {
@@ -109,7 +122,7 @@ public class ArchonActor extends RobotActor {
                     nearestBroadcastEnemy = new MapLocation(loc.x, loc.y);
                 }
             	 
-            } else {
+            } else if(msg[0]==0) {
             	MapLocation loc = new MapLocation(msg[1]%1000, msg[1]/1000);
                 
                 int dist = myLocation.distanceSquaredTo(loc);
@@ -117,9 +130,26 @@ public class ArchonActor extends RobotActor {
                     bestEnemyDist = dist;
                     nearestBroadcastEnemy = new MapLocation(loc.x, loc.y);
                 }
-            }
-            
-            
+            } else if(msg[0]==1) {
+            	MapLocation loc = new MapLocation(msg[1]%1000, msg[1]/1000);
+            	
+            	int dist = myLocation.distanceSquaredTo((loc));
+            	if(dist < bestDenDist && dist>5) {
+            		bestDenDist = dist;	
+            		nearestBroadcastDen = new MapLocation(loc.x, loc.y);
+            	}
+            }  else if(msg[0]==3) {
+            	MapLocation loc = new MapLocation(msg[1]%1000, msg[1]/1000);
+            	
+            	int dist = myLocation.distanceSquaredTo((loc));
+            	if(dist < bestRallyDist) {
+					bestRallyDist = dist;
+					nearestBroadcastRally = new MapLocation(loc.x, loc.y);
+            	}
+            } 
+        }
+        if(nearestBroadcastRally!=null) {
+        	savedRally = new MapLocation(nearestBroadcastRally.x, nearestBroadcastRally.y);
         }
     }
 
@@ -147,6 +177,7 @@ public class ArchonActor extends RobotActor {
        
     }
 
+    
     public void act() throws GameActionException {
         setInitialVars();
         broadcastInitialPosition();
@@ -163,11 +194,7 @@ public class ArchonActor extends RobotActor {
                 reachedCentral=true;
             }
             
-            if(nearestHostilePos != null) {
-                rc.broadcastMessageSignal(0, nearestHostilePos.x+1000*nearestHostilePos.y, myType.sensorRadiusSquared*2);
-            } else if(nearestDenPos != null) {
-            	rc.broadcastMessageSignal(1, nearestDenPos.x+1000*nearestDenPos.y, myType.sensorRadiusSquared*2);
-            }
+            broadcast();
             
             if(!reachedCentral) {
                 moveToLocationClearIfStuck(central);
@@ -179,6 +206,44 @@ public class ArchonActor extends RobotActor {
 
             Clock.yield();
         }
+    }
+    
+    public void broadcast() throws GameActionException {
+    	sent = 0;
+    	if(isCentral) {
+    		if(rc.getRoundNum()%100==99) {
+    			rc.broadcastMessageSignal(3, averageAlliesNoScouts.x+1000*averageAlliesNoScouts.y, 20000);
+    			sent = 20;
+    		} else {
+    			rc.broadcastMessageSignal(3, averageAlliesNoScouts.x+1000*averageAlliesNoScouts.y, myType.sensorRadiusSquared*2);
+    			sent++;
+    		}
+        }
+        
+        broadcastEnemies();
+    }
+    
+    public void broadcastEnemies() throws GameActionException {
+    	for(RobotInfo info : enemiesInfo) {
+    		if(sent>=20) {
+    			return;
+    		}
+    		rc.broadcastMessageSignal(0,  info.location.x+1000*info.location.y, myType.sensorRadiusSquared*2);
+    		sent++;
+    	}
+    	
+    	for(RobotInfo info : zombiesInfo) {
+    		if(sent>=20) {
+    			return;
+    		}
+    		if(info.type==RobotType.ZOMBIEDEN) {
+    			rc.broadcastMessageSignal(1, info.location.x+1000*info.location.y, myType.sensorRadiusSquared*2);
+    		} else {
+    			rc.broadcastMessageSignal(0,  info.location.x+1000*info.location.y, myType.sensorRadiusSquared*2);
+    		}
+    		
+    		sent++;
+    	}
     }
     
     public void move() throws GameActionException {
@@ -213,22 +278,16 @@ public class ArchonActor extends RobotActor {
 	            	moveToLocationClearIfStuck(nearestBroadcastEnemy);
 	            } else if(nearestBroadcastAlly!=null) {
 	            	moveToLocationClearIfStuck(nearestBroadcastAlly);
+	            } else if(nearestBroadcastDen!=null) {
+	            	moveToLocationClearIfStuck(nearestBroadcastDen);
+	            } else if(savedRally!=null && myLocation.distanceSquaredTo(savedRally)>15) {
+	            	moveToLocationClearIfStuck(savedRally);
 	            } else {
 	            	moveToLocationClearIfStuck(averageAlliesNoScouts);
 	            }
 	        }
         }
         	
-    }
-    
-    public void checkHealth() throws GameActionException {
-
-        double health = rc.getHealth();
-        if(health < lastHealth) {
-            rc.setIndicatorString(1, "GET BACK"+lastDirection);
-            moveInOppLastDirection();
-        } 
-        lastHealth = health;
     }
 
     public boolean repairAllies() throws GameActionException {

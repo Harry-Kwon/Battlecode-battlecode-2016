@@ -55,14 +55,17 @@ public class ScoutActor extends RobotActor {
     public void broadcastEnemies() throws GameActionException {
     	int sent = 0;
     	for(RobotInfo info : enemiesInfo) {
-    		rc.broadcastMessageSignal(0,  info.location.x+1000*info.location.y, myType.sensorRadiusSquared*2);
-    		sent++;
-    		if(sent>20) {
+    		if(sent>=20) {
     			return;
     		}
+    		rc.broadcastMessageSignal(0,  info.location.x+1000*info.location.y, myType.sensorRadiusSquared*2);
+    		sent++;
     	}
     	
     	for(RobotInfo info : zombiesInfo) {
+    		if(sent>=20) {
+    			return;
+    		}
     		if(info.type==RobotType.ZOMBIEDEN) {
     			rc.broadcastMessageSignal(1, info.location.x+1000*info.location.y, myType.sensorRadiusSquared*2);
     		} else {
@@ -70,17 +73,8 @@ public class ScoutActor extends RobotActor {
     		}
     		
     		sent++;
-    		if(sent>20) {
-    			return;
-    		}
+    		
     	}
-    }
-    
-    public void getBestIdleSignal() {
-    	bestIdleSignal = null;
-    	bestIdleCount = 0;
-    	
-    	
     }
 
     public void move() throws GameActionException {

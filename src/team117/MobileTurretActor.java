@@ -18,6 +18,8 @@ public class MobileTurretActor extends RobotActor {
 	MapLocation nearestBroadcastEnemy;
 	MapLocation nearestBroadcastAlly;
 	MapLocation nearestBroadcastDen;
+	MapLocation nearestBroadcastRally;
+	MapLocation savedRally;
 	RobotType myType;
 	
 	MapLocation nearestAttackableEnemy;
@@ -111,10 +113,12 @@ public class MobileTurretActor extends RobotActor {
         nearestBroadcastEnemy = null;
         nearestBroadcastAlly = null;
         nearestBroadcastDen = null;
+        nearestBroadcastRally = null;
 
         int bestEnemyDist = 2000000;
         int bestAllyDist = 2000000;
         int bestDenDist = 2000000;
+        int bestRallyDist = 2000000;
         
         for(Signal s : signals) {
             if(s.getTeam() != myTeam) {
@@ -147,9 +151,18 @@ public class MobileTurretActor extends RobotActor {
             		bestDenDist = dist;	
             		nearestBroadcastDen = new MapLocation(loc.x, loc.y);
             	}
-            }
-            
-            
+            }  else if(msg[0]==3) {
+            	MapLocation loc = new MapLocation(msg[1]%1000, msg[1]/1000);
+            	
+            	int dist = myLocation.distanceSquaredTo((loc));
+            	if(dist < bestRallyDist) {
+					bestRallyDist = dist;
+					nearestBroadcastRally = new MapLocation(loc.x, loc.y);
+            	}
+            }   
+        }
+        if(nearestBroadcastRally!=null) {
+        	savedRally = new MapLocation(nearestBroadcastRally.x, nearestBroadcastRally.y);
         }
     }
 	
@@ -215,6 +228,8 @@ public class MobileTurretActor extends RobotActor {
         		moveToLocation(nearestDenPos);
         	} else if(nearestBroadcastDen!=null) {
         		moveToLocation(nearestBroadcastDen);
+        	} else if(savedRally!=null && myLocation.distanceSquaredTo(savedRally)>15) {
+        		moveToLocation(savedRally);
         	} else {
         		if(alliesNum >= 20) {
         			moveFromLocation(averageAlliesNoScouts);
