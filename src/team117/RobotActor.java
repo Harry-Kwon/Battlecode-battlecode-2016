@@ -1,6 +1,15 @@
 package team117;
 
-import battlecode.common.*;
+import java.util.ArrayList;
+
+import battlecode.common.Direction;
+import battlecode.common.GameActionException;
+import battlecode.common.GameConstants;
+import battlecode.common.MapLocation;
+import battlecode.common.RobotController;
+import battlecode.common.RobotInfo;
+import battlecode.common.RobotType;
+import battlecode.common.Team;
 
 public class RobotActor {
 
@@ -318,6 +327,26 @@ public class RobotActor {
 
         moveInDirection(dir);
     }
+    
+    public void moveFromLocationClearIfStuckBack(MapLocation target) throws GameActionException {
+        Direction dir = myLocation.directionTo(target).opposite();
+
+        if(dir == Direction.OMNI) {
+            dir = directionBias;
+        }
+
+        moveInDirectionClearIfStuckBack(dir);
+    }
+
+    public void moveToLocationClearIfStuckBack(MapLocation target) throws GameActionException {
+        Direction dir = myLocation.directionTo(target);
+
+        if(dir == Direction.OMNI) {
+            dir = directionBias;
+        }
+
+        moveInDirectionClearIfStuckBack(dir);
+    }
 
     public void moveFromLocationClearIfStuck(MapLocation target) throws GameActionException {
         Direction dir = myLocation.directionTo(target).opposite();
@@ -370,6 +399,45 @@ public class RobotActor {
         }
     }
     
+    public void moveInDirectionClearIfStuckBack(Direction d) throws GameActionException {
+
+        if(!rc.isCoreReady()) {
+            return;
+        }
+
+        boolean moved = false;
+
+        //not sure if Direction is passed by reference
+        Direction dir = d;
+        for(int i=0; i<8;i++) {
+            Direction thisDir = nextDir(dir, i);
+            
+            if(!rc.onTheMap(myLocation.add(thisDir))) {
+        		directionBias = directionBias.opposite();
+        	}
+            
+            if(rc.canMove(thisDir)) {
+            	try{
+            		rc.move(thisDir);
+            		moved = true;
+            		lastDirection = thisDir;
+            	}
+            	catch(Exception e){e.printStackTrace();}
+                return;
+            }
+        }
+
+        if(!moved) {
+            for(int i=0; i<8; i++) {
+            	Direction thisDir = nextDir(dir, i);
+                if(rc.senseRobotAtLocation(myLocation.add(thisDir))==null && rc.senseRubble(myLocation.add(thisDir)) > 50.0) {
+                    rc.clearRubble(thisDir);
+                    return;
+                }
+            }
+        }
+    }
+    
     public void moveInDirectionClearIfStuck(Direction d) throws GameActionException {
 
         if(!rc.isCoreReady()) {
@@ -386,11 +454,14 @@ public class RobotActor {
             if(!rc.onTheMap(myLocation.add(thisDir))) {
         		directionBias = directionBias.opposite();
         	}
-
+            
             if(rc.canMove(thisDir)) {
-                rc.move(thisDir);
-                moved = true;
-                lastDirection = thisDir;
+            	try{
+            		rc.move(thisDir);
+            		moved = true;
+            		lastDirection = thisDir;
+            	}
+            	catch(Exception e){e.printStackTrace();}
                 return;
             }
         }
@@ -454,8 +525,12 @@ public class RobotActor {
         		directionBias = directionBias.opposite();
         	}
 
-            if(safeToMove(thisDir)) {
-                rc.move(thisDir);
+            if(rc.canMove(thisDir)) {
+            	try{
+            		rc.move(thisDir);
+            		lastDirection = thisDir;
+            	}
+            	catch(Exception e){e.printStackTrace();}
                 return;
             }
         }
@@ -495,4 +570,63 @@ public class RobotActor {
 
         return true;
     }
+    
+    public void tryBFSMove(MapLocation target) throws GameActionException {
+    	Direction moveDir = getBFSDirectionTo(target);
+    	if(moveDir == Direction.NONE) {
+    		moveToLocation(target);
+    	} else {
+    		moveInDirection(moveDir);
+    	}
+    }
+    
+    public void tryBFSMoveClearIfStuck(MapLocation target) throws GameActionException {
+    	Direction moveDir = getBFSDirectionTo(target);
+    	if(moveDir == Direction.NONE) {
+    		moveToLocationClearIfStuck(target);
+    	} else {
+    		moveInDirectionClearIfStuck(moveDir);
+    	}
+    }
+    
+    public Direction getBFSDirectionTo(MapLocation target) throws GameActionException {
+    	if(!rc.canSense(target)) {
+    		return(Direction.NONE);
+    	}
+    	
+    	Direction[] directions = {Direction.NORTH, Direction.NORTH_EAST, Direction.EAST, Direction.SOUTH_EAST,
+                Direction.SOUTH, Direction.SOUTH_WEST, Direction.WEST, Direction.NORTH_WEST};
+    	
+    	int myX = myLocation.x;
+    	int myY = myLocation.y;
+    	boolean[][] traveled = new boolean[21][21];
+    	ArrayList<MapLocation> border = new ArrayList<MapLocation>(0);
+    	
+    	border.add(target);
+    	traveled[target.x-myX+10][target.y-myY+10] =true;
+    	
+    	while(border.size()>0) {
+    		MapLocation tile = border.get(0);
+    		border.remove(0);
+    		
+    		for(Direction dir : directions) {
+    			MapLocation loc = tile.add(dir);
+    			
+    			if(loc.equals(myLocation)) {
+    				return(dir.opposite());
+    			} else {
+    				int relX = loc.x-myX+10;
+    				int relY = loc.y-myY+10;
+    				if(!traveled[relX][relY] && rc.canSense(loc) && rc.onTheMap(loc) && !rc.isLocationOccupied(loc) && rc.senseRubble(loc) <50.0) {
+    					border.add(new MapLocation(loc.x, loc.y));
+    					traveled[relX][relY]=true;
+    				}
+    			}
+    		}
+    		
+    	}
+    	
+    	return(Direction.NONE);
+    }
+    
 }

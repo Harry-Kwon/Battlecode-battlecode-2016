@@ -53,9 +53,6 @@ public class MobileTurretActor extends RobotActor {
             	attack(nearestAttackableEnemy);
             }
 
-            /*find nearby*/
-            countNearbyRobots();
-
             /*act*/
             switch(myType) {
             case TURRET:

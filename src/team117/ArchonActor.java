@@ -168,7 +168,7 @@ public class ArchonActor extends RobotActor {
         if(allyScoutsNum==0) {
             typeToSpawn = RobotType.SCOUT;
         } else {
-        	if(allyGuardsNum*2 < (allyTurretsNum+allyTTMNum)*3) {
+        	if(allyGuardsNum < (allyTurretsNum+allyTTMNum)*2) {
         		typeToSpawn = RobotType.GUARD;
         	} else {
         		typeToSpawn = RobotType.TURRET;
@@ -176,7 +176,6 @@ public class ArchonActor extends RobotActor {
         }
        
     }
-
     
     public void act() throws GameActionException {
         setInitialVars();
@@ -190,7 +189,7 @@ public class ArchonActor extends RobotActor {
             updateRoundVars();
             findAverageAlliesNoScouts();
             
-            if(!reachedCentral && myLocation.distanceSquaredTo(central) <= 16) {
+            if(!reachedCentral && myLocation.distanceSquaredTo(central) <= 36) {
                 reachedCentral=true;
             }
             

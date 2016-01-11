@@ -16,12 +16,17 @@ public class MobileTurretActor extends RobotActor {
 	}
 	
 	MapLocation nearestBroadcastEnemy;
+	MapLocation nearestBroadcastAlly;
 	MapLocation nearestBroadcastDen;
+	MapLocation nearestBroadcastRally;
+	MapLocation savedRally;
 	RobotType myType;
 	
-	MapLocation nearestAttackablePos;
+	MapLocation nearestAttackableEnemy;
 	
 	Signal[] signals;
+	
+	int timer = 0;
 	
 	public void act() throws GameActionException {
         myTeam = rc.getTeam();
@@ -32,11 +37,24 @@ public class MobileTurretActor extends RobotActor {
         	signals = rc.emptySignalQueue();
         	
             countNearbyRobots();
-            findNearestHostilePos();
             findAverageAlliesPos();
-            
+            findNearestHostilePos();
             readBroadcasts();
-    		findNearestAttackablePos();
+            findNearestAttackableEnemy();
+            findAverageAlliesNoScouts();
+            
+            if(nearestAttackableEnemy!=null) {
+            	rc.setIndicatorString(0, "TARGET"+ nearestAttackableEnemy.x+", "+nearestAttackableEnemy.y);
+            }
+            
+            rc.setIndicatorString(1, "DELAYS CORE, ATTACK: "+rc.getCoreDelay()+", "+rc.getWeaponDelay() + " | WEAPON READY: "+rc.isWeaponReady());
+            
+            if(nearestAttackableEnemy!=null) {
+            	attack(nearestAttackableEnemy);
+            }
+
+            /*find nearby*/
+            countNearbyRobots();
 
             /*act*/
             switch(myType) {
@@ -54,63 +72,74 @@ public class MobileTurretActor extends RobotActor {
         }
     }
 	
-	public void moveTTM() throws GameActionException {
-		if((myLocation.x+myLocation.y)%2==1) {
-			rc.unpack();
-		} else {
-			moveToClosestOddTile();
-		}
-	}
-	
-	public void moveToClosestOddTile() throws GameActionException {
-		MapLocation target = null;
-		int bestDist = 999999999;
-		for(int x=-4;x<=4;x++) {
-			for(int y=-4;y<=4;y++) {
-				MapLocation loc = new MapLocation(myLocation.x+x, myLocation.y+y);
-				if((x+y)%2==1 && rc.canSense(loc) && rc.onTheMap(loc) && rc.senseRobotAtLocation(loc)==null && rc.senseRubble(loc)<50.0) {
-					int dist = x*x+y*y;
-					if(dist < bestDist) {
-						bestDist = dist;
-						target = new MapLocation(loc.x, loc.y);
-					}
-				}
+	public void findNearestAttackableEnemy() throws GameActionException {
+		nearestAttackableEnemy = null;
+		int bestDist = 2000000;
+		
+		for(RobotInfo info : enemiesInfo) {
+			MapLocation loc = info.location;
+			int dist = myLocation.distanceSquaredTo(loc);
+			if(dist >5 && dist < bestDist) {
+				nearestAttackableEnemy = new MapLocation(loc.x, loc.y);
+				bestDist = dist;
 			}
 		}
 		
-		if(target!=null) {
-			moveToLocation(target);
-		} else {
-			moveFromLocation(averageAlliesPos);
+		for(Signal s: signals) {
+			int[] msg = s.getMessage();
+			if(s.getTeam() != myTeam || msg==null || msg[0]!=0) {
+				continue;
+			}
+			
+			MapLocation loc = new MapLocation(msg[1]%1000, msg[1]/1000);
+			int dist = myLocation.distanceSquaredTo(loc);
+			if(dist >5 && dist<=48 && dist < bestDist) {
+				nearestAttackableEnemy = new MapLocation(loc.x, loc.y);
+				bestDist = dist;
+			}
 		}
-	}
-	
-	public void moveTurret() throws GameActionException {
-		if((myLocation.x+myLocation.y)%2!=1) {
-			rc.pack();
-		} else if(nearestAttackablePos!=null) {
-			attack(nearestAttackablePos);
+		
+		//if no enemy units, target den
+		if(nearestAttackableEnemy==null) {
+			if(nearestDenPos != null && nearestDenDist > 5) {
+				nearestAttackableEnemy = nearestDenPos;
+			} else if(nearestBroadcastDen!=null && myLocation.distanceSquaredTo(nearestBroadcastDen)<=48) {
+				nearestAttackableEnemy = nearestBroadcastDen;
+			}
 		}
 	}
 	
 	public void readBroadcasts() throws GameActionException {
         nearestBroadcastEnemy = null;
+        nearestBroadcastAlly = null;
         nearestBroadcastDen = null;
+        nearestBroadcastRally = null;
 
         int bestEnemyDist = 2000000;
+        int bestAllyDist = 2000000;
         int bestDenDist = 2000000;
+        int bestRallyDist = 2000000;
         
         for(Signal s : signals) {
-            int[] msg = s.getMessage();
-            if(s.getTeam() != myTeam || msg == null) {
+            if(s.getTeam() != myTeam) {
                 continue;
             }
             
-            if(msg[0]==0) {
+            int[] msg = s.getMessage();
+            if(msg==null) {
+            	MapLocation loc = s.getLocation();
+                
+                int dist = myLocation.distanceSquaredTo(loc);
+                if(dist < bestAllyDist) {
+                    bestAllyDist = dist;
+                    nearestBroadcastEnemy = new MapLocation(loc.x, loc.y);
+                }
+            	 
+            } else if(msg[0]==0) {
             	MapLocation loc = new MapLocation(msg[1]%1000, msg[1]/1000);
                 
                 int dist = myLocation.distanceSquaredTo(loc);
-                if(dist > 5 && dist < bestEnemyDist) {
+                if(dist < bestEnemyDist) {
                     bestEnemyDist = dist;
                     nearestBroadcastEnemy = new MapLocation(loc.x, loc.y);
                 }
@@ -118,46 +147,117 @@ public class MobileTurretActor extends RobotActor {
             	MapLocation loc = new MapLocation(msg[1]%1000, msg[1]/1000);
             	
             	int dist = myLocation.distanceSquaredTo((loc));
-            	if(dist > 5 && dist < bestDenDist ) {
+            	if(dist < bestDenDist && dist>5) {
             		bestDenDist = dist;	
             		nearestBroadcastDen = new MapLocation(loc.x, loc.y);
             	}
-            }
-            
-            
+            }  else if(msg[0]==3) {
+            	MapLocation loc = new MapLocation(msg[1]%1000, msg[1]/1000);
+            	
+            	int dist = myLocation.distanceSquaredTo((loc));
+            	if(dist < bestRallyDist) {
+					bestRallyDist = dist;
+					nearestBroadcastRally = new MapLocation(loc.x, loc.y);
+            	}
+            }   
+        }
+        if(nearestBroadcastRally!=null) {
+        	savedRally = new MapLocation(nearestBroadcastRally.x, nearestBroadcastRally.y);
         }
     }
 	
-	public void findNearestAttackablePos() throws GameActionException {
-		nearestAttackablePos = null;
-		int bestDist = 2000000;
-		
-		for(RobotInfo info : enemiesInfo) {
-			MapLocation loc = info.location;
-			int dist = myLocation.distanceSquaredTo(loc);
-			if(dist >5 && dist < bestDist) {
-				nearestAttackablePos = new MapLocation(loc.x, loc.y);
-				bestDist = dist;
+	public void moveTurret() throws GameActionException {
+		if(nearestHostilePos!=null) {
+			timer = -1;
+			rc.broadcastSignal(myType.sensorRadiusSquared*2);
+			if(allyGuardsNum+allyTurretsNum >= enemiesNum+zombiesNum) {
+				return;
+			} else if(rc.isCoreReady()){
+				rc.pack();
+			}
+		} else if(nearestAttackableEnemy!=null) {
+			timer = -1;
+			return;
+		} else if(rc.isCoreReady()){
+			if(timer==-1) {
+				timer=0;
+			} else {
+				timer++;
+			}
+			
+			if(timer>=5) {
+				rc.pack();
+				timer = -1;
 			}
 		}
 		
-		if(nearestBroadcastEnemy!=null) {
-			int dist = myLocation.distanceSquaredTo(nearestBroadcastEnemy);
-			if(dist<=48 && dist < bestDist) {
-				nearestAttackablePos = new MapLocation(nearestBroadcastEnemy.x, nearestBroadcastEnemy.y);
-				bestDist = dist;
-			}
-		}
-		
-		//if no enemy units, target den
-		if(nearestAttackablePos==null) {
-			if(nearestDenPos != null && nearestDenDist > 5) {
-				nearestAttackablePos = new MapLocation(nearestDenPos.x, nearestDenPos.y);
-			} else if(nearestBroadcastDen!=null && myLocation.distanceSquaredTo(nearestBroadcastDen)<=48) {
-				nearestAttackablePos = new MapLocation(nearestBroadcastDen.x, nearestBroadcastDen.y);
-			}
-		}
 	}
 	
+    public void moveTTM() throws GameActionException {
 
+        if(nearestHostilePos!=null) {
+        	rc.broadcastSignal(myType.sensorRadiusSquared*2);
+        	if(allyGuardsNum+allyTurretsNum>=enemiesNum+zombiesNum) {
+        		if(rc.isWeaponReady()) {
+        			if(onEvenTile()) {
+        				rc.unpack();
+        			} else {
+        				moveToEvenTile();
+        			}
+        		}
+        	} else {
+        		moveFromLocation(nearestHostilePos);
+        	}
+        	
+        } else {
+        	if(nearestBroadcastEnemy!=null) {
+        		if(nearestAttackableEnemy!=null && myLocation.distanceSquaredTo(nearestAttackableEnemy)<=36) {
+        			if(rc.isWeaponReady()) {
+        				if(onEvenTile()) {
+        					rc.unpack();
+        				} else {
+        					moveToEvenTile();
+        				}
+        			}
+        		} else {
+        			moveToLocation(nearestBroadcastEnemy);
+        		}
+        	} else if(nearestBroadcastAlly!=null) {
+        		moveToLocation(nearestBroadcastAlly);
+        	} else if(nearestDenPos!=null) { 
+        		moveToLocation(nearestDenPos);
+        	} else if(nearestBroadcastDen!=null) {
+        		moveToLocation(nearestBroadcastDen);
+        	} else if(savedRally!=null && myLocation.distanceSquaredTo(savedRally)>15) {
+        		moveToLocation(savedRally);
+        	} else {
+        		if(alliesNum >= 20) {
+        			moveFromLocation(averageAlliesNoScouts);
+        		} else {
+        			moveToLocation(averageAlliesNoScouts);
+        		}
+        	}
+        }
+    }
+    
+    public void moveToEvenTile() throws GameActionException {
+    	if(!rc.isCoreReady()) {
+    		return;
+    	}
+    	Direction dir = Direction.NORTH;
+    	for(int i=0; i<4; i++) {
+    		if(rc.canMove(dir)) {
+    			rc.move(dir);
+    			return;
+    		}
+    		dir = dir.rotateRight().rotateRight();
+    	}
+    }
+    
+    public boolean onEvenTile() {
+    	if((myLocation.x+myLocation.y)%2==0) {
+    		return true;
+    	}
+    	return false;
+    }
 }

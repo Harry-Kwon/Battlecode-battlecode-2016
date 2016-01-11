@@ -12,6 +12,10 @@ public class GuardActor extends RobotActor {
 	MapLocation nearestBroadcastEnemy;
 	MapLocation nearestBroadcastAlly;
 	MapLocation nearestBroadcastDen;
+	MapLocation nearestBroadcastRally;
+	
+	MapLocation savedRally;
+	
 	RobotType myType;
 	
 	public GuardActor(RobotController rc) throws GameActionException {
@@ -19,7 +23,6 @@ public class GuardActor extends RobotActor {
     }
 	
 	public void act() throws GameActionException {
-        rc.setIndicatorString(0, "SOLDIER ACTOR");
         myTeam = rc.getTeam();
         myType = rc.getType();
 
@@ -50,10 +53,12 @@ public class GuardActor extends RobotActor {
         nearestBroadcastEnemy = null;
         nearestBroadcastAlly = null;
         nearestBroadcastDen = null;
+        nearestBroadcastRally = null;
 
         int bestEnemyDist = 2000000;
         int bestAllyDist = 2000000;
         int bestDenDist = 2000000;
+        int bestRallyDist = 2000000;
         
         for(Signal s : signals) {
             if(s.getTeam() != myTeam) {
@@ -86,9 +91,18 @@ public class GuardActor extends RobotActor {
             		bestDenDist = dist;	
             		nearestBroadcastDen = new MapLocation(loc.x, loc.y);
             	}
+            } else if(msg[0]==3) {
+            	MapLocation loc = new MapLocation(msg[1]%1000, msg[1]/1000);
+            	
+            	int dist = myLocation.distanceSquaredTo((loc));
+            	if(dist < bestRallyDist) {
+					bestRallyDist = dist;
+					nearestBroadcastRally = new MapLocation(loc.x, loc.y);
+            	}
             }
-            
-            
+        }
+        if(nearestBroadcastRally!=null) {
+        	savedRally = new MapLocation(nearestBroadcastRally.x, nearestBroadcastRally.y);
         }
     }
 	
@@ -112,16 +126,24 @@ public class GuardActor extends RobotActor {
 
         if(nearestHostilePos != null) {
         	rc.broadcastSignal(myType.sensorRadiusSquared*2);
-        	if(allyGuardsNum+allyTurretsNum >= enemiesNum+zombiesNum || allyTurretsNum>0) {
-        		moveToLocationClearIfStuck(nearestHostilePos);
+        	if(nearestTurretPos!=null) {
+        		if(nearestTurretDist < 13) {
+        			moveToLocationClearIfStuck(nearestHostilePos);
+        		} else {
+            		moveToLocationClearIfStuck(nearestTurretPos);
+        		} 	
         	} else {
-        		moveFromLocationClearIfStuck(nearestHostilePos);
+        		if(savedRally!=null) {
+        			moveToLocationClearIfStuck(savedRally);
+        		} else {
+        			moveToLocationClearIfStuck(nearestHostilePos);
+        		}
         		
         	}
         	
         } else {
         	findNearestTurret();
-        	if(nearestTurretDist>=20 && nearestTurretPos != null) {
+        	if(nearestTurretDist>=13 && nearestTurretPos != null) {
 				moveToLocationClearIfStuck(nearestTurretPos);
         	} else if(nearestBroadcastEnemy!=null) {
         		moveToLocationClearIfStuck(nearestBroadcastEnemy);
@@ -131,6 +153,8 @@ public class GuardActor extends RobotActor {
         		moveToLocationClearIfStuck(nearestDenPos);
         	} else if(nearestBroadcastDen!=null) {
         		moveToLocationClearIfStuck(nearestBroadcastDen);
+        	} else if(savedRally!=null && myLocation.distanceSquaredTo(savedRally)>15) {
+        		moveToLocationClearIfStuck(savedRally);
         	} else {
         		
         		if(alliesNum >= 20) {

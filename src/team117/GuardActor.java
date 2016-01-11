@@ -18,6 +18,8 @@ public class GuardActor extends RobotActor {
 	
 	RobotType myType;
 	
+	String debugString = "";
+	
 	public GuardActor(RobotController rc) throws GameActionException {
         super(rc);
     }
@@ -28,21 +30,30 @@ public class GuardActor extends RobotActor {
 
         while(true) {
         	myLocation = rc.getLocation();
+        	debugString += " | "+Clock.getBytecodeNum();
             countNearbyRobots();
+            debugString += " | "+Clock.getBytecodeNum();
             findAverageAlliesPos();
             findNearestHostilePos();
             findAverageAlliesNoScouts();
             
+            debugString += " | "+Clock.getBytecodeNum();
+            
             readBroadcasts();
             
+            debugString += " | "+Clock.getBytecodeNum();
+            
             attack();
-
-            /*find nearby*/
-            countNearbyRobots();
-            rc.setIndicatorString(1, "E,Z,A"+enemiesNum+","+zombiesNum+","+alliesNum);
+            
+            debugString += " | "+Clock.getBytecodeNum();
 
             /*act*/
             move();
+            
+            debugString += " | "+Clock.getBytecodeNum();
+            
+            rc.setIndicatorString(0, debugString);
+            debugString = "";
 
             Clock.yield();
         }
@@ -128,15 +139,15 @@ public class GuardActor extends RobotActor {
         	rc.broadcastSignal(myType.sensorRadiusSquared*2);
         	if(nearestTurretPos!=null) {
         		if(nearestTurretDist < 13) {
-        			moveToLocationClearIfStuck(nearestHostilePos);
+        			tryBFSMoveClearIfStuck(nearestHostilePos);
         		} else {
-            		moveToLocationClearIfStuck(nearestTurretPos);
+        			tryBFSMoveClearIfStuck(nearestTurretPos);
         		} 	
         	} else {
         		if(savedRally!=null) {
-        			moveToLocationClearIfStuck(savedRally);
+        			tryBFSMoveClearIfStuck(savedRally);
         		} else {
-        			moveToLocationClearIfStuck(nearestHostilePos);
+        			tryBFSMoveClearIfStuck(nearestHostilePos);
         		}
         		
         	}
@@ -144,7 +155,7 @@ public class GuardActor extends RobotActor {
         } else {
         	findNearestTurret();
         	if(nearestTurretDist>=13 && nearestTurretPos != null) {
-				moveToLocationClearIfStuck(nearestTurretPos);
+        		moveToLocationClearIfStuck(nearestTurretPos);
         	} else if(nearestBroadcastEnemy!=null) {
         		moveToLocationClearIfStuck(nearestBroadcastEnemy);
         	} else if(nearestBroadcastAlly!=null) {

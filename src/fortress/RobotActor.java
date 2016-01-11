@@ -3,24 +3,10 @@ package fortress;
 import battlecode.common.*;
 
 public class RobotActor {
-	
-	public void moveToOtherTile() throws GameActionException {
-		if(!rc.isCoreReady()) {
-			return;
-		}
-    	Direction dir = Direction.NORTH;
-    	for(int i=0; i<4; i++) {
-    		if(rc.canMove(dir)) {
-    			rc.move(dir);
-    			return;
-    		}
-    	}
-    }
 
     RobotController rc;
     MapLocation myLocation;
     Team myTeam;
-    RobotType myType;
     MapLocation lastLocation;
 
     public RobotActor(RobotController rc) throws GameActionException {
@@ -50,6 +36,7 @@ public class RobotActor {
     MapLocation[] alliesPos;
 
     int allyTurretsNum;
+    int allyTTMNum;
     int allyScoutsNum;
     int allyGuardsNum;
 
@@ -143,25 +130,26 @@ public class RobotActor {
 
     public void countNearbyRobots() throws GameActionException {
 
-        enemiesInfo = rc.senseNearbyRobots(53, myTeam.opponent());
+        enemiesInfo = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, myTeam.opponent());
         enemiesNum = enemiesInfo.length;
         enemiesPos = new MapLocation[enemiesNum];
         for(int i=0; i<enemiesNum; i++) {
             enemiesPos[i] = enemiesInfo[i].location;
         }
 
-        zombiesInfo = rc.senseNearbyRobots(53, Team.ZOMBIE);
+        zombiesInfo = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, Team.ZOMBIE);
         zombiesNum = zombiesInfo.length;
         zombiesPos = new MapLocation[zombiesNum];
         for(int i=0; i<zombiesNum; i++) {
             zombiesPos[i] = zombiesInfo[i].location;
         }
 
-        alliesInfo = rc.senseNearbyRobots(53, myTeam);
+        alliesInfo = rc.senseNearbyRobots(rc.getType().sensorRadiusSquared, myTeam);
         alliesNum = alliesInfo.length;
         alliesPos = new MapLocation[alliesNum];
 
         allyTurretsNum = 0;
+        allyTTMNum=0;
         allyScoutsNum = 0;
         allyGuardsNum = 0;
         for(int i=0; i<alliesNum; i++) {
@@ -173,6 +161,9 @@ public class RobotActor {
                 case TURRET:
                     allyTurretsNum++;
                     break;
+                case TTM:
+                	allyTTMNum++;
+                	break;
                 case GUARD:
                 	allyGuardsNum++;
                 	break;
@@ -396,7 +387,7 @@ public class RobotActor {
         		directionBias = directionBias.opposite();
         	}
 
-            if(safeToMove(thisDir)) {
+            if(rc.canMove(thisDir)) {
                 rc.move(thisDir);
                 moved = true;
                 lastDirection = thisDir;
