@@ -117,9 +117,9 @@ public class ArchonActor extends RobotActor {
             	MapLocation loc = s.getLocation();
                 
                 int dist = myLocation.distanceSquaredTo(loc);
-                if(dist < bestAllyDist) {
+                if(dist < bestAllyDist && dist>myType.sensorRadiusSquared) {
                     bestAllyDist = dist;
-                    nearestBroadcastEnemy = new MapLocation(loc.x, loc.y);
+                    nearestBroadcastAlly = new MapLocation(loc.x, loc.y);
                 }
             	 
             } else if(msg[0]==0) {
@@ -165,7 +165,7 @@ public class ArchonActor extends RobotActor {
     public void determineSpawnType() {
         //set type to spawn
 
-        if(allyScoutsNum==0) {
+        if(allyScoutsNum==0 && (allyGuardsNum+allyTurretsNum)>0) {
             typeToSpawn = RobotType.SCOUT;
         } else {
         	if(allyGuardsNum < (allyTurretsNum+allyTTMNum)*2) {
@@ -196,7 +196,7 @@ public class ArchonActor extends RobotActor {
             broadcast();
             
             if(!reachedCentral) {
-                moveToLocationClearIfStuck(central);
+                moveToLocationClear(central);
             } else {
             	
             	move();
@@ -210,7 +210,7 @@ public class ArchonActor extends RobotActor {
     public void broadcast() throws GameActionException {
     	sent = 0;
     	if(isCentral) {
-    		if(rc.getRoundNum()%100==99) {
+    		if(rc.getRoundNum()%100==30) {
     			rc.broadcastMessageSignal(3, averageAlliesNoScouts.x+1000*averageAlliesNoScouts.y, 20000);
     			sent = 20;
     		} else {
@@ -248,22 +248,16 @@ public class ArchonActor extends RobotActor {
     public void move() throws GameActionException {
         repairAdjacentRobots();
         
-        if(hostilesNearby() /*&& rc.getHealth() <=500*/) {
-        	Direction dir = myLocation.directionTo(nearestHostilePos);
-        	int bestDist = myLocation.add(dir).distanceSquaredTo(averageAlliesPos);
-        	
-        	int dist = myLocation.add(dir.rotateRight()).distanceSquaredTo(averageAlliesNoScouts);
-        	if(dist > bestDist) {
-        		dir = dir.rotateRight();
-        		bestDist = dist;
+        if(hostilesNearby()) {
+        	if(isCentral) {
+                moveFromLocationClearIfStuck(nearestHostilePos);
+                return;
+        	} else if(savedRally!=null) {
+        		moveToLocationClearIfStuck(savedRally);
+        	} else {
+        		moveFromLocationClearIfStuck(nearestHostilePos);
         	}
-        	dist = myLocation.add(dir.rotateLeft().rotateLeft()).distanceSquaredTo(averageAlliesNoScouts);
-        	if(dist > bestDist) {
-        		dir = dir.rotateLeft().rotateLeft();
-        		bestDist = dist;
-        	}
-            moveFromLocationClearIfStuck(nearestHostilePos);
-            return;
+        	return;
         }
         
         if(rc.hasBuildRequirements(typeToSpawn)) {
@@ -272,11 +266,21 @@ public class ArchonActor extends RobotActor {
         	findNearestTurret();
         	if(nearestTurretDist>=13 && nearestTurretPos != null) {
 				moveToLocationClearIfStuck(nearestTurretPos);
-        	} else if(!repairAllies()){
+        	} else {
 	            findNearestPartCache();
+	            findNearestNeutral();
 	            if(nearestPartCache!=null) {
 	            	moveToLocationClearIfStuck(nearestPartCache);
-	            } else {
+	            } else if(nearestNeutralPos!=null) {
+	            	if(myLocation.distanceSquaredTo(nearestNeutralPos) <= 3) {
+	            		if(rc.isCoreReady()) {
+	            			rc.activate(nearestNeutralPos);
+	            		}
+	            		return;
+	            	} else {
+	            		moveToLocationClearIfStuck(nearestNeutralPos);
+	            	}
+	            } else if(!repairAllies()){
 	            	if(savedRally!=null) {
 	            		moveToLocationClearIfStuck(savedRally);
 	            	} else {
@@ -309,7 +313,25 @@ public class ArchonActor extends RobotActor {
     	}
     	
     }
-
+    
+    MapLocation nearestNeutralPos;
+    int nearestNeutralDist;
+    
+    public void findNearestNeutral() throws GameActionException {
+    	nearestNeutralPos = null;
+    	int nearestNeutralDist = 2000000;
+    	
+    	RobotInfo[]neutrals = rc.senseNearbyRobots(myType.sensorRadiusSquared, Team.NEUTRAL);
+    	
+    	for(RobotInfo info : neutrals) {
+    		int dist = myLocation.distanceSquaredTo(info.location);
+    		if(dist < nearestNeutralDist) {
+    			nearestNeutralDist = dist;
+    			nearestNeutralPos = new MapLocation(info.location.x, info.location.y);
+    		}
+    	}
+    }
+    
     public boolean repairAllies() throws GameActionException {
     	
         MapLocation target = null;

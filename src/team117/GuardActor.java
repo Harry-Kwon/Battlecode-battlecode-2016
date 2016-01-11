@@ -81,9 +81,9 @@ public class GuardActor extends RobotActor {
             	MapLocation loc = s.getLocation();
                 
                 int dist = myLocation.distanceSquaredTo(loc);
-                if(dist < bestAllyDist) {
+                if(dist < bestAllyDist && dist>myType.sensorRadiusSquared) {
                     bestAllyDist = dist;
-                    nearestBroadcastEnemy = new MapLocation(loc.x, loc.y);
+                    nearestBroadcastAlly = new MapLocation(loc.x, loc.y);
                 }
             	 
             } else if(msg[0]==0){
@@ -119,12 +119,12 @@ public class GuardActor extends RobotActor {
 	
 	public void attack() throws GameActionException {
 		if(nearestHostilePos != null) {
-			if(nearestHostileDist <= 3) {
+			if(nearestHostileDist <= myType.attackRadiusSquared) {
 	        	attack(nearestHostilePos);
 	        }
 		} else {
 			if(nearestDenPos != null) {
-				if(nearestDenDist <= 3) {
+				if(nearestDenDist <= myType.attackRadiusSquared) {
 					attack(nearestDenPos);
 				}
 			}
@@ -138,10 +138,16 @@ public class GuardActor extends RobotActor {
         if(nearestHostilePos != null) {
         	rc.broadcastSignal(myType.sensorRadiusSquared*2);
         	if(nearestTurretPos!=null) {
-        		if(nearestTurretDist < 13) {
+        		if(nearestTurretDist < 13 || !(allyGuardsNum>=15)) {
         			tryBFSMoveClearIfStuck(nearestHostilePos);
+        			//BFSMoveToNearestEnemy();
         		} else {
-        			tryBFSMoveClearIfStuck(nearestTurretPos);
+        			if(nearestTurretPos!=null) {
+        				tryBFSMoveClearIfStuck(nearestTurretPos);
+        			} else if(savedRally!=null){
+        				moveToLocationClearIfStuck(savedRally);
+        			}
+        			
         		} 	
         	} else {
         		if(savedRally!=null) {
@@ -164,7 +170,7 @@ public class GuardActor extends RobotActor {
         		moveToLocationClearIfStuck(nearestDenPos);
         	} else if(nearestBroadcastDen!=null) {
         		moveToLocationClearIfStuck(nearestBroadcastDen);
-        	} else if(savedRally!=null && myLocation.distanceSquaredTo(savedRally)>15) {
+        	} else if(savedRally!=null && myLocation.distanceSquaredTo(savedRally)>53) {
         		moveToLocationClearIfStuck(savedRally);
         	} else {
         		
