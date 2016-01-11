@@ -387,7 +387,7 @@ public class RobotActor {
         		directionBias = directionBias.opposite();
         	}
 
-            if(safeToMove(thisDir)) {
+            if(rc.canMove(thisDir)) {
                 rc.move(thisDir);
                 moved = true;
                 lastDirection = thisDir;

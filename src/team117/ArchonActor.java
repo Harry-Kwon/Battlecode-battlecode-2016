@@ -274,20 +274,41 @@ public class ArchonActor extends RobotActor {
         	if(nearestTurretDist>=13 && nearestTurretPos != null) {
 				moveToLocationClearIfStuck(nearestTurretPos);
         	} else if(!repairAllies()){
-	            if(nearestBroadcastEnemy!=null) {
-	            	moveToLocationClearIfStuck(nearestBroadcastEnemy);
-	            } else if(nearestBroadcastAlly!=null) {
-	            	moveToLocationClearIfStuck(nearestBroadcastAlly);
-	            } else if(nearestBroadcastDen!=null) {
-	            	moveToLocationClearIfStuck(nearestBroadcastDen);
-	            } else if(savedRally!=null && myLocation.distanceSquaredTo(savedRally)>225) {
-	            	moveToLocationClearIfStuck(savedRally);
+	            findNearestPartCache();
+	            if(nearestPartCache!=null) {
+	            	moveToLocationClearIfStuck(nearestPartCache);
 	            } else {
-	            	moveToLocationClearIfStuck(averageAlliesNoScouts);
+	            	if(savedRally!=null) {
+	            		moveToLocationClearIfStuck(savedRally);
+	            	} else {
+	            		moveToLocationClearIfStuck(averageAlliesNoScouts);
+	            	}
 	            }
 	        }
         }
         	
+    }
+    
+    MapLocation nearestPartCache;
+    int nearestPartCacheDist;
+    
+    public void findNearestPartCache() throws GameActionException {
+    	nearestPartCache = null;
+    	nearestPartCacheDist = 2000000;
+    	
+    	for(int x=-5; x<=5; x++) {
+			for(int y=-5; y<=5; y++) {
+				MapLocation loc = new MapLocation(myLocation.x+x, myLocation.y+y);
+				if(rc.canSense(loc) && rc.senseParts(loc)>0.0) {
+					int dist = x*x+y*y;
+					if(dist < nearestPartCacheDist) {
+						nearestPartCacheDist = dist;
+						nearestPartCache = new MapLocation(loc.x, loc.y);
+					}
+				}
+			}
+    	}
+    	
     }
 
     public boolean repairAllies() throws GameActionException {
