@@ -169,7 +169,7 @@ public class ArchonActor extends RobotActor {
         if(allyScoutsNum==0 && (allyGuardsNum+allyTurretsNum)>0) {
             typeToSpawn = RobotType.SCOUT;
         } else {
-        	if(allyGuardsNum < (allyTurretsNum+allyTTMNum)*2) {
+        	if(allyGuardsNum*2 < (allyTurretsNum+allyTTMNum)*3) {
         		typeToSpawn = RobotType.GUARD;
         	} else {
         		typeToSpawn = RobotType.TURRET;
@@ -273,11 +273,11 @@ rc.setIndicatorString(1, lastDirection.toString());
         } else if(rc.hasBuildRequirements(typeToSpawn) && rc.isCoreReady()) {
             buildActions();
         } else {
-//        	if(nearestTurretDist>=13 && nearestTurretPos != null) {
-//				moveToLocationClearIfStuck(nearestTurretPos);
-//        	} else {
+        	if(nearestTurretDist>=13 && nearestTurretPos != null) {
+				moveToLocationClearIfStuck(nearestTurretPos);
+        	} else {
 	            if(nearestPartCache!=null) {
-	            	moveToLocationClearIfStuck(nearestPartCache);
+	            	moveToLocationClear(nearestPartCache);
 	            } else if(nearestNeutralPos!=null && (!isCentral||archons==1)) {
 	            	rc.setIndicatorString(0, "NEUTRAL DISTANCE: "+nearestNeutralDist);
 	            	if(nearestNeutralDist <= 3) {
@@ -295,7 +295,7 @@ rc.setIndicatorString(1, lastDirection.toString());
 	            		moveToLocationClearIfStuck(averageAlliesNoScouts);
 	            	}
 	            }
-//	        }
+	        }
         }
         	
     }
@@ -403,8 +403,13 @@ rc.setIndicatorString(1, lastDirection.toString());
     public boolean hostilesNearby() {
     	int threshold = 9;
     	if(isCentral) {
+    		threshold = 35;
+    	}
+    	
+    	if(rc.getHealth()<200) {
     		threshold = 53;
     	}
+    	
         if(nearestHostilePos!=null && nearestHostileDist<=threshold) {
             return true;
         }
