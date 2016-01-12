@@ -36,6 +36,9 @@ public class ViperActor extends RobotActor {
 			if(dist > myType.attackRadiusSquared) {
 				continue;
 			}
+			if(info.type!=RobotType.GUARD || info.type!=RobotType.TURRET) {
+				return;
+			}
 			
 			if(info.viperInfectedTurns == bestEnemyToAttackTimer) {
 				if(dist > bestEnemyToAttackDist) {
