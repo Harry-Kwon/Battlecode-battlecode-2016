@@ -80,18 +80,19 @@ public class MobileTurretActor extends RobotActor {
 		for(RobotInfo info : enemiesInfo) {
 			MapLocation loc = info.location;
 			int dist = myLocation.distanceSquaredTo(loc);
-			if(!enemyIsBigZombie && info.type==RobotType.BIGZOMBIE && dist>5) {
-				nearestAttackableEnemy = new MapLocation(loc.x, loc.y);
-				bestDist = dist;
-				enemyIsBigZombie=true;
-			} else if(dist >5 && dist < bestDist) {
-				if(info.type==RobotType.BIGZOMBIE || !enemyIsBigZombie) {
+//			if(!enemyIsBigZombie && info.type==RobotType.BIGZOMBIE && dist>5) {
+//				nearestAttackableEnemy = new MapLocation(loc.x, loc.y);
+//				bestDist = dist;
+//				enemyIsBigZombie=true;
+//			} else 
+				if(dist >5 && dist < bestDist) {
+//				if(info.type==RobotType.BIGZOMBIE || !enemyIsBigZombie) {
 					nearestAttackableEnemy = new MapLocation(loc.x, loc.y);
 					bestDist = dist;
-					if(info.type == RobotType.BIGZOMBIE) {
-						enemyIsBigZombie=true;
-					}
-				}
+//					if(info.type == RobotType.BIGZOMBIE) {
+//						enemyIsBigZombie=true;
+//					}
+//				}
 			}
 		}
 		
@@ -104,19 +105,20 @@ public class MobileTurretActor extends RobotActor {
 			MapLocation loc = new MapLocation(msg[1]%1000, msg[1]/1000);
 			int dist = myLocation.distanceSquaredTo(loc);
 			
-			if(!enemyIsBigZombie && msg[0]==2 && dist>5 && dist<=48) {
-				nearestAttackableEnemy = new MapLocation(loc.x, loc.y);
-				bestDist = dist;
-				enemyIsBigZombie=true;
-			} else if(dist >5 && dist<=48 && dist < bestDist) {
-				if(msg[0]==2||!enemyIsBigZombie) {
-					nearestAttackableEnemy = new MapLocation(loc.x, loc.y);
-					bestDist = dist;
-					if(msg[0]==2) {
-						enemyIsBigZombie = true;
-					}
+//			if(!enemyIsBigZombie && msg[0]==2 && dist>5 && dist<=48) {
+//				nearestAttackableEnemy = new MapLocation(loc.x, loc.y);
+//				bestDist = dist;
+//				enemyIsBigZombie=true;
+//			} else 
+				if(dist >5 && dist<=48 && dist < bestDist) {
+//					if(msg[0]==2||!enemyIsBigZombie) {
+						nearestAttackableEnemy = new MapLocation(loc.x, loc.y);
+						bestDist = dist;
+//						if(msg[0]==2) {
+//							enemyIsBigZombie = true;
+//						}
+//					}
 				}
-			}
 			
 		}
 		
