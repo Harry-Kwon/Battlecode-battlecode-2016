@@ -133,22 +133,12 @@ public class GuardActor extends RobotActor {
 	}
 	
     public void move() throws GameActionException {
-
+    	findNearestTurret();
 
         if(nearestHostilePos != null) {
         	rc.broadcastSignal(myType.sensorRadiusSquared*2);
-        	if(nearestTurretPos!=null) {
-        		if(nearestTurretDist < 13 || !(allyGuardsNum>=15)) {
-        			tryBFSMoveClearIfStuck(nearestHostilePos);
-        			//BFSMoveToNearestEnemy();
-        		} else {
-        			if(nearestTurretPos!=null) {
-        				tryBFSMoveClearIfStuck(nearestTurretPos);
-        			} else if(savedRally!=null){
-        				moveToLocationClearIfStuck(savedRally);
-        			}
-        			
-        		} 	
+        	if(nearestTurretPos!=null || (allyGuardsNum>=15)) {
+        		tryBFSMoveClearIfStuck(nearestHostilePos);	
         	} else {
         		if(savedRally!=null) {
         			tryBFSMoveClearIfStuck(savedRally);
@@ -159,22 +149,24 @@ public class GuardActor extends RobotActor {
         	}
         	
         } else {
-        	findNearestTurret();
         	if(nearestTurretDist>=13 && nearestTurretPos != null) {
         		moveToLocationClearIfStuck(nearestTurretPos);
         	} else if(nearestBroadcastEnemy!=null) {
         		moveToLocationClearIfStuck(nearestBroadcastEnemy);
         	} else if(nearestBroadcastAlly!=null) {
         		moveToLocationClearIfStuck(nearestBroadcastAlly);
-        	} else if(nearestDenPos!=null) { 
-        		moveToLocationClearIfStuck(nearestDenPos);
-        	} else if(nearestBroadcastDen!=null) {
+        	} 
+//        	else if(nearestDenPos!=null) { 
+//        		moveToLocationClearIfStuck(nearestDenPos);
+//        	} 
+        	else if(nearestBroadcastDen!=null && myLocation.distanceSquaredTo(nearestBroadcastDen)>myType.sensorRadiusSquared) {
         		moveToLocationClearIfStuck(nearestBroadcastDen);
         	} else if(savedRally!=null && myLocation.distanceSquaredTo(savedRally)>53) {
         		moveToLocationClearIfStuck(savedRally);
         	} else {
-        		
-        		if(alliesNum >= 20) {
+        		if(nearestTurretPos!=null && nearestTurretDist<=5) {
+        			moveFromLocationClearIfStuck(nearestTurretPos);
+        		} else if(alliesNum >= 20) {
         			moveFromLocationClear(averageAlliesNoScouts);
         		} else {
         			moveToLocationClear(averageAlliesNoScouts);

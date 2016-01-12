@@ -75,27 +75,49 @@ public class MobileTurretActor extends RobotActor {
 		int bestDist = 2000000;
 		nearestAttackableEnemyIsDen = false;
 		
+		boolean enemyIsBigZombie = false;
+		
 		for(RobotInfo info : enemiesInfo) {
 			MapLocation loc = info.location;
 			int dist = myLocation.distanceSquaredTo(loc);
-			if(dist >5 && dist < bestDist) {
+			if(!enemyIsBigZombie && info.type==RobotType.BIGZOMBIE && dist>5) {
 				nearestAttackableEnemy = new MapLocation(loc.x, loc.y);
 				bestDist = dist;
+				enemyIsBigZombie=true;
+			} else if(dist >5 && dist < bestDist) {
+				if(info.type==RobotType.BIGZOMBIE || !enemyIsBigZombie) {
+					nearestAttackableEnemy = new MapLocation(loc.x, loc.y);
+					bestDist = dist;
+					if(info.type == RobotType.BIGZOMBIE) {
+						enemyIsBigZombie=true;
+					}
+				}
 			}
 		}
 		
 		for(Signal s: signals) {
 			int[] msg = s.getMessage();
-			if(s.getTeam() != myTeam || msg==null || msg[0]!=0) {
+			if(s.getTeam() != myTeam || msg==null || !(msg[0]==0||msg[0]==2)) {
 				continue;
 			}
 			
 			MapLocation loc = new MapLocation(msg[1]%1000, msg[1]/1000);
 			int dist = myLocation.distanceSquaredTo(loc);
-			if(dist >5 && dist<=48 && dist < bestDist) {
+			
+			if(!enemyIsBigZombie && msg[0]==2 && dist>5 && dist<=48) {
 				nearestAttackableEnemy = new MapLocation(loc.x, loc.y);
 				bestDist = dist;
+				enemyIsBigZombie=true;
+			} else if(dist >5 && dist<=48 && dist < bestDist) {
+				if(msg[0]==2||!enemyIsBigZombie) {
+					nearestAttackableEnemy = new MapLocation(loc.x, loc.y);
+					bestDist = dist;
+					if(msg[0]==2) {
+						enemyIsBigZombie = true;
+					}
+				}
 			}
+			
 		}
 		
 		//if no enemy units, target den
@@ -175,7 +197,7 @@ public class MobileTurretActor extends RobotActor {
 			if(nearestAttackableEnemyIsDen) {
 				if(nearestBroadcastEnemy!=null) {
 					if(rc.isCoreReady()) {
-							rc.pack();
+						rc.pack();
 					}
 				} else {
 					return;
@@ -212,8 +234,9 @@ public class MobileTurretActor extends RobotActor {
 //    				moveToEvenTile();
 //    			}
     		}
+    		return;
         	
-        } else if(nearestAttackableEnemyIsDen && nearestBroadcastEnemy!=null) {
+        } else if(nearestAttackableEnemy!=null && nearestAttackableEnemyIsDen) {
         	if(rc.isWeaponReady()) {
 //    			if(onEvenTile()) {
     				rc.unpack();
@@ -221,6 +244,11 @@ public class MobileTurretActor extends RobotActor {
 //    				moveToEvenTile();
 //    			}
     		}
+        	return;
+        } else if(nearestHostilePos!=null && myLocation.distanceSquaredTo(nearestHostilePos) <= 5) {
+        	moveFromLocation(nearestHostilePos);
+        } else if(nearestDenPos!=null && myLocation.distanceSquaredTo(nearestDenPos)<=5) {
+        	moveFromLocation(nearestDenPos);
         } else {
         	if(nearestBroadcastEnemy!=null) {
         		moveToLocation(nearestBroadcastEnemy);

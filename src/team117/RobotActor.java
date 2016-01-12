@@ -210,6 +210,23 @@ public class RobotActor {
         }
     }
     
+    MapLocation nearestGuardPos;
+    int nearestGuardDist;
+
+    public void findNearestGuard() {
+    	nearestGuardDist=9999999;
+        nearestGuardPos=null;
+        for(RobotInfo info : alliesInfo) {
+            if(info.type == RobotType.GUARD) {
+                int dist = myLocation.distanceSquaredTo(info.location);
+                if(dist < nearestTurretDist) {
+                	nearestGuardDist = dist;
+                	nearestGuardPos = new MapLocation(info.location.x, info.location.y);
+                }
+            }
+        }
+    }
+    
     MapLocation farthestTurretPos;
     int farthestTurretDist;
 
@@ -268,9 +285,10 @@ public class RobotActor {
         if(!rc.isCoreReady()) {
             return;
         }
-
+        if(lastDirection==null){
+        	return;
+        }
         Direction dir = lastDirection.opposite();
-
         String test = "";
 
         for(int i=0; i<8;i++) {
@@ -379,6 +397,10 @@ public class RobotActor {
             Direction thisDir = nextDir(dir, i);
             MapLocation loc = myLocation.add(thisDir);
             
+            if(thisDir.opposite()==lastDirection) {
+            	continue;
+            }
+            
             if(!rc.onTheMap(myLocation.add(thisDir))) {
         		directionBias = directionBias.opposite();
         	}
@@ -411,6 +433,10 @@ public class RobotActor {
         Direction dir = d;
         for(int i=0; i<8;i++) {
             Direction thisDir = nextDir(dir, i);
+            
+            if(thisDir.opposite()==lastDirection) {
+            	continue;
+            }
             
             if(!rc.onTheMap(myLocation.add(thisDir))) {
         		directionBias = directionBias.opposite();
@@ -450,6 +476,10 @@ public class RobotActor {
         Direction dir = d;
         for(int i=0; i<5;i++) {
             Direction thisDir = nextDir(dir, i);
+            
+            if(thisDir.opposite()==lastDirection) {
+            	continue;
+            }
             
             if(!rc.onTheMap(myLocation.add(thisDir))) {
         		directionBias = directionBias.opposite();
@@ -520,6 +550,10 @@ public class RobotActor {
         Direction dir = d;
        for(int i=0; i<8;i++) {
             Direction thisDir = nextDir(dir, i);
+            
+            if(thisDir.opposite()==lastDirection) {
+            	continue;
+            }
             
             if(!rc.onTheMap(myLocation.add(thisDir))) {
         		directionBias = directionBias.opposite();

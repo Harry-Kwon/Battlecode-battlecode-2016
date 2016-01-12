@@ -7,6 +7,7 @@ public class ArchonActor extends RobotActor {
 
     MapLocation central = myLocation;
     boolean reachedCentral = false;
+    int archons;
     
     MapLocation nearestBroadcastEnemy;
 	MapLocation nearestBroadcastAlly;
@@ -40,7 +41,7 @@ public class ArchonActor extends RobotActor {
     }
 
     public void findCentral() throws GameActionException {
-        int archons = 1;
+        archons = 1;
         MapLocation[] archonPositions = new MapLocation[6];
         archonPositions[0] = myLocation;
 
@@ -146,7 +147,7 @@ public class ArchonActor extends RobotActor {
 					bestRallyDist = dist;
 					nearestBroadcastRally = new MapLocation(loc.x, loc.y);
             	}
-            } 
+            }
         }
         if(nearestBroadcastRally!=null) {
         	savedRally = new MapLocation(nearestBroadcastRally.x, nearestBroadcastRally.y);
@@ -178,6 +179,7 @@ public class ArchonActor extends RobotActor {
     }
     
     public void act() throws GameActionException {
+    	
         setInitialVars();
         broadcastInitialPosition();
 
@@ -185,18 +187,22 @@ public class ArchonActor extends RobotActor {
         findCentral();
 
         while(true) {
+        	rc.setIndicatorString(0, "");
+        	if(lastDirection!=null) {
+rc.setIndicatorString(1, lastDirection.toString());
 
+        	}
             updateRoundVars();
             findAverageAlliesNoScouts();
             
-            if(!reachedCentral && myLocation.distanceSquaredTo(central) <= 36) {
+            if(!reachedCentral && myLocation.distanceSquaredTo(central) <= 16) {
                 reachedCentral=true;
             }
             
             broadcast();
             
             if(!reachedCentral) {
-                moveToLocationClear(central);
+            	moveToLocationClearIfStuck(central);
             } else {
             	
             	move();
@@ -248,6 +254,10 @@ public class ArchonActor extends RobotActor {
     public void move() throws GameActionException {
         repairAdjacentRobots();
         
+        findNearestPartCache();
+        findNearestNeutral();
+        findNearestTurret();
+        
         if(hostilesNearby()) {
         	if(isCentral) {
                 moveFromLocationClearIfStuck(nearestHostilePos);
@@ -258,21 +268,19 @@ public class ArchonActor extends RobotActor {
         		moveFromLocationClearIfStuck(nearestHostilePos);
         	}
         	return;
-        }
-        
-        if(rc.hasBuildRequirements(typeToSpawn)) {
+        } else if(nearestNeutralPos!=null && nearestNeutralDist<=3 && rc.isCoreReady()) { 
+    			rc.activate(nearestNeutralPos);
+        } else if(rc.hasBuildRequirements(typeToSpawn) && rc.isCoreReady()) {
             buildActions();
         } else {
-        	findNearestTurret();
-        	if(nearestTurretDist>=13 && nearestTurretPos != null) {
-				moveToLocationClearIfStuck(nearestTurretPos);
-        	} else {
-	            findNearestPartCache();
-	            findNearestNeutral();
+//        	if(nearestTurretDist>=13 && nearestTurretPos != null) {
+//				moveToLocationClearIfStuck(nearestTurretPos);
+//        	} else {
 	            if(nearestPartCache!=null) {
 	            	moveToLocationClearIfStuck(nearestPartCache);
-	            } else if(nearestNeutralPos!=null) {
-	            	if(myLocation.distanceSquaredTo(nearestNeutralPos) <= 3) {
+	            } else if(nearestNeutralPos!=null && (!isCentral||archons==1)) {
+	            	rc.setIndicatorString(0, "NEUTRAL DISTANCE: "+nearestNeutralDist);
+	            	if(nearestNeutralDist <= 3) {
 	            		if(rc.isCoreReady()) {
 	            			rc.activate(nearestNeutralPos);
 	            		}
@@ -287,7 +295,7 @@ public class ArchonActor extends RobotActor {
 	            		moveToLocationClearIfStuck(averageAlliesNoScouts);
 	            	}
 	            }
-	        }
+//	        }
         }
         	
     }
@@ -312,6 +320,26 @@ public class ArchonActor extends RobotActor {
 			}
     	}
     	
+    	if(nearestPartCache==null) {
+    		for(Signal s : signals) {
+                if(s.getTeam() != myTeam) {
+                    continue;
+                }
+                
+                int[] msg = s.getMessage();
+                
+                if(msg!=null && msg[0]==4) {
+                 	MapLocation loc = new MapLocation(msg[1]%1000, msg[1]/1000);
+                 	
+                 	int dist = myLocation.distanceSquaredTo(loc);
+                 	if(dist < nearestPartCacheDist) {
+                 		nearestPartCacheDist = dist;
+						nearestPartCache = new MapLocation(loc.x, loc.y);
+                 	}
+                 }
+        	}
+    	}
+    	
     }
     
     MapLocation nearestNeutralPos;
@@ -319,7 +347,7 @@ public class ArchonActor extends RobotActor {
     
     public void findNearestNeutral() throws GameActionException {
     	nearestNeutralPos = null;
-    	int nearestNeutralDist = 2000000;
+    	nearestNeutralDist = 2000000;
     	
     	RobotInfo[]neutrals = rc.senseNearbyRobots(myType.sensorRadiusSquared, Team.NEUTRAL);
     	
@@ -337,7 +365,7 @@ public class ArchonActor extends RobotActor {
         MapLocation target = null;
         int bestDist = 9999999;
         for(RobotInfo r : alliesInfo) {
-            if(r.health < r.maxHealth && r.type!=RobotType.ARCHON) {
+            if(r.health < r.maxHealth && r.type!=RobotType.ARCHON && r.type!=RobotType.SCOUT) {
                 int dist = myLocation.distanceSquaredTo(r.location);
 
                 if(dist < bestDist) {
@@ -373,7 +401,11 @@ public class ArchonActor extends RobotActor {
     }
 
     public boolean hostilesNearby() {
-        if(nearestHostilePos!=null && nearestHostileDist<=9) {
+    	int threshold = 9;
+    	if(isCentral) {
+    		threshold = 53;
+    	}
+        if(nearestHostilePos!=null && nearestHostileDist<=threshold) {
             return true;
         }
         return false;
@@ -436,10 +468,6 @@ public class ArchonActor extends RobotActor {
         //if(!bestLoc.equals(myLocation)) {
         //    System.out.println("  "+bestLoc.x+","+bestLoc.y+" | "+((bestLoc.x+bestLoc.y)%2==1));
         //}
-
-        if(bestLoc!=null) {
-            rc.setIndicatorString(1, ""+((bestLoc.y+bestLoc.x)%3==1));
-        }
 
         return(bestLoc);
 
