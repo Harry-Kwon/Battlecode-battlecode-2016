@@ -408,7 +408,7 @@ public class ArchonActor extends RobotActor {
     		threshold = 35;
     	}
     	
-    	if(rc.getHealth()<200) {
+    	if(rc.getHealth()<400) {
     		threshold = 53;
     	}
     	
@@ -487,7 +487,9 @@ public class ArchonActor extends RobotActor {
 
         if(rc.hasBuildRequirements(type)) {
             if(rc.canBuild(dir, type)) {
-                rc.build(dir, type);
+            	try{
+            		rc.build(dir, type);
+            	} catch(Exception e) {e.printStackTrace();}
                 return true;
             }
         }
