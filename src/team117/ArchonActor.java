@@ -91,10 +91,15 @@ public class ArchonActor extends RobotActor {
         findAverageAlliesPos();
         findNearestHostilePos();
         readBroadcasts();
+        findAverageAlliesNoScouts();
 
         //updateState();
 
         determineSpawnType();
+        
+        if(central!=null && !reachedCentral && myLocation.distanceSquaredTo(central) < 9) {
+            reachedCentral=true;
+        }
     }
     
     public void readBroadcasts() throws GameActionException {
@@ -168,9 +173,11 @@ public class ArchonActor extends RobotActor {
 
         if(allyScoutsNum==0 && (allyGuardsNum+allyTurretsNum)>0) {
             typeToSpawn = RobotType.SCOUT;
-        } else if(allyGuardsNum>5 && allyVipersNum==0) {
-        	typeToSpawn = RobotType.VIPER;
-        } else {
+        }
+//        else if(allyGuardsNum>5 && allyVipersNum==0) {
+//        	typeToSpawn = RobotType.VIPER;
+//        } 
+        else {
         	if(allyGuardsNum*2 < (allyTurretsNum+allyTTMNum)*3) {
         		typeToSpawn = RobotType.GUARD;
         	} else {
@@ -184,32 +191,16 @@ public class ArchonActor extends RobotActor {
     	
         setInitialVars();
         broadcastInitialPosition();
-
         Clock.yield();
+        
         findCentral();
 
         while(true) {
-        	rc.setIndicatorString(0, "");
-        	if(lastDirection!=null) {
-        		rc.setIndicatorString(1, lastDirection.toString());
-
-        	}
             updateRoundVars();
-            findAverageAlliesNoScouts();
-            
-            if(!reachedCentral && myLocation.distanceSquaredTo(central) < 9) {
-                reachedCentral=true;
-            }
             
             broadcast();
-            
-            if(!reachedCentral) {
-            	moveToLocationClearIfStuck(central);
-            } else {
-            	
-            	move();
-                
-            }
+                        	
+        	move();
 
             Clock.yield();
         }
@@ -260,7 +251,9 @@ public class ArchonActor extends RobotActor {
         findNearestNeutral();
         findNearestTurret();
         
-        if(hostilesNearby()) {
+        if(!reachedCentral) {
+        	moveToLocationClearIfStuck(central);
+        } else if(hostilesNearby()) {
         	if(isCentral) {
                 moveFromLocationClearIfStuck(nearestHostilePos);
                 return;

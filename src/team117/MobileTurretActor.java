@@ -29,32 +29,39 @@ public class MobileTurretActor extends RobotActor {
 	
 	int timer = 0;
 	
+	public void setInitialVars() throws GameActionException {
+		myTeam = rc.getTeam();
+	}
+	
+	public void updateRoundVars() throws GameActionException {		
+		myType = rc.getType();
+		myLocation = rc.getLocation();
+		signals = rc.emptySignalQueue();
+		
+		countNearbyRobots();
+		findAverageAlliesPos();
+		findNearestHostilePos();
+		
+		readBroadcasts();
+		findNearestAttackableEnemy();
+		findAverageAlliesNoScouts();
+	}
+
+	public void broadcast() throws GameActionException {
+		if(nearestHostilePos != null) {
+			rc.broadcastSignal(myType.sensorRadiusSquared*2);
+		}
+	}
+	
 	public void act() throws GameActionException {
-        myTeam = rc.getTeam();
+        setInitialVars();
 
         while(true) {
-        	myType = rc.getType();
-        	myLocation = rc.getLocation();
-        	signals = rc.emptySignalQueue();
-        	
-            countNearbyRobots();
-            findAverageAlliesPos();
-            findNearestHostilePos();
-            readBroadcasts();
-            findNearestAttackableEnemy();
-            findAverageAlliesNoScouts();
+            updateRoundVars();
+            broadcast();
             
-            if(nearestAttackableEnemy!=null) {
-            	rc.setIndicatorString(0, "TARGET"+ nearestAttackableEnemy.x+", "+nearestAttackableEnemy.y);
-            }
+            attack();
             
-            rc.setIndicatorString(1, "DELAYS CORE, ATTACK: "+rc.getCoreDelay()+", "+rc.getWeaponDelay() + " | WEAPON READY: "+rc.isWeaponReady());
-            
-            if(nearestAttackableEnemy!=null) {
-            	attack(nearestAttackableEnemy);
-            }
-
-            /*act*/
             switch(myType) {
             case TURRET:
             	moveTurret();
@@ -69,6 +76,12 @@ public class MobileTurretActor extends RobotActor {
             Clock.yield();
         }
     }
+	
+	public void attack() throws GameActionException {
+		if(nearestAttackableEnemy!=null) {
+			attack(nearestAttackableEnemy);
+		}		
+	}
 	
 	public void findNearestAttackableEnemy() throws GameActionException {
 		nearestAttackableEnemy = null;
@@ -205,10 +218,7 @@ public class MobileTurretActor extends RobotActor {
     }
 	
 	public void moveTurret() throws GameActionException {
-		if(nearestAttackableEnemy!=null) {
-			rc.broadcastSignal(myType.sensorRadiusSquared*2);
-			
-			
+		if(nearestAttackableEnemy!=null) {			
 			if(nearestAttackableEnemyIsDen) {
 				if(nearestBroadcastEnemy!=null) {
 					if(rc.isCoreReady()) {
@@ -239,9 +249,7 @@ public class MobileTurretActor extends RobotActor {
 	
     public void moveTTM() throws GameActionException {
 
-        if(nearestAttackableEnemy!=null && !nearestAttackableEnemyIsDen) {
-        	rc.broadcastSignal(myType.sensorRadiusSquared*2);
-        	
+        if(nearestAttackableEnemy!=null && !nearestAttackableEnemyIsDen) {        	
     		if(rc.isWeaponReady()) {
 //    			if(onEvenTile()) {
     				rc.unpack();
@@ -284,25 +292,5 @@ public class MobileTurretActor extends RobotActor {
         	}
         }
     }
-    
-    public void moveToEvenTile() throws GameActionException {
-    	if(!rc.isCoreReady()) {
-    		return;
-    	}
-    	Direction dir = Direction.NORTH;
-    	for(int i=0; i<4; i++) {
-    		if(rc.canMove(dir)) {
-    			rc.move(dir);
-    			return;
-    		}
-    		dir = dir.rotateRight().rotateRight();
-    	}
-    }
-    
-    public boolean onEvenTile() {
-    	if((myLocation.x+myLocation.y)%2==0) {
-    		return true;
-    	}
-    	return false;
-    }
+
 }

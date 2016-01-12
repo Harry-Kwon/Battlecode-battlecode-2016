@@ -618,6 +618,7 @@ public class RobotActor {
     		moveInDirection(moveDir);
     	}
     }
+
     
     public void tryBFSMoveClearIfStuck(MapLocation target) throws GameActionException {
     	Direction moveDir = getBFSDirectionTo(target);

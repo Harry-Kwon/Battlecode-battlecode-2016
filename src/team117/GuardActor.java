@@ -18,46 +18,43 @@ public class GuardActor extends RobotActor {
 	
 	RobotType myType;
 	
-	String debugString = "";
 	
 	public GuardActor(RobotController rc) throws GameActionException {
         super(rc);
     }
 	
+	public void setInitialVars() throws GameActionException {		
+		myTeam = rc.getTeam();
+		myType = rc.getType();
+	}
+	
+	public void updateRoundVars() throws GameActionException{
+		myLocation = rc.getLocation();
+		countNearbyRobots();
+		findAverageAlliesPos();
+		findNearestHostilePos();
+		findAverageAlliesNoScouts();		
+		readBroadcasts();
+	}
+	
 	public void act() throws GameActionException {
-        myTeam = rc.getTeam();
-        myType = rc.getType();
-
-        while(true) {
-        	myLocation = rc.getLocation();
-        	debugString += " | "+Clock.getBytecodeNum();
-            countNearbyRobots();
-            debugString += " | "+Clock.getBytecodeNum();
-            findAverageAlliesPos();
-            findNearestHostilePos();
-            findAverageAlliesNoScouts();
-            
-            debugString += " | "+Clock.getBytecodeNum();
-            
-            readBroadcasts();
-            
-            debugString += " | "+Clock.getBytecodeNum();
-            
+		setInitialVars();
+        while(true) {    
+        	updateRoundVars();
+        	broadcast();
+        	
             attack();
-            
-            debugString += " | "+Clock.getBytecodeNum();
-
-            /*act*/
             move();
             
-            debugString += " | "+Clock.getBytecodeNum();
-            
-            rc.setIndicatorString(0, debugString);
-            debugString = "";
-
             Clock.yield();
         }
     }
+	
+	public void broadcast() throws GameActionException {
+		if(nearestHostilePos!=null) {
+			rc.broadcastSignal(myType.sensorRadiusSquared*2);			
+		}
+	}
 	
 	public void readBroadcasts() throws GameActionException {
         Signal[] signals = rc.emptySignalQueue();
@@ -136,8 +133,7 @@ public class GuardActor extends RobotActor {
     	findNearestTurret();
 
         if(nearestHostilePos != null) {
-        	rc.broadcastSignal(myType.sensorRadiusSquared*2);
-        	if(nearestTurretPos!=null || (allyGuardsNum>=15)) {
+        	if(nearestTurretPos!=null /*|| (allyGuardsNum>=15)*/) {
         		tryBFSMoveClearIfStuck(nearestHostilePos);	
         	} else {
         		if(savedRally!=null) {

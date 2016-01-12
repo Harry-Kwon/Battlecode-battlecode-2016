@@ -6,8 +6,6 @@ public class ScoutActor extends RobotActor {
 
     MapLocation nearestArchonPos;
     int nearestArchonDist;
-
-    MapLocation spawnLocation = null;
     RobotType myType;
     
     MapLocation bestIdleSignal;
@@ -23,43 +21,37 @@ public class ScoutActor extends RobotActor {
         super(rc);
     }
 
+    public void setInitialVars() throws GameActionException {    	
+    	myTeam = rc.getTeam();
+    	myType = rc.getType();
+    }
+    
+    public void updateRoundVars() throws GameActionException {
+    	myLocation = rc.getLocation();
+    	sent = 0;
+    	
+    	countNearbyRobots();
+    	findNearestHostilePos();
+    	findAverageAlliesPos();
+    	findAverageAlliesNoScouts();
+    	readBroadcasts();
+    	
+    }
+    
     public void act() throws GameActionException {
-        myTeam = rc.getTeam();
-        myType = rc.getType();
-
-        spawnLocation = rc.getLocation();
-
+    	setInitialVars();
         while(true) {
-            myLocation = rc.getLocation();
-            sent = 0;
-
-            countNearbyRobots();
-            findNearestHostilePos();
-            findAverageAlliesPos();
-            findAverageAlliesNoScouts();
-            
-            broadcastEnemies();
-            broadcastPartCaches();
-            readBroadcasts();
-
-            /*if(rc.getHealth() < 70) {
-                findNearestArchon(myLocation);
-                moveToLocationClearIfStuck(nearestArchonPos);
-            }*/
-
-            
-//            findNearestTurret();
-//            
-//            if(nearestTurretPos!=null) {
-//            	
-//            }
-
+            updateRoundVars();
+        	broadcast();
             move();
-
-            lastLocation = new MapLocation(myLocation.x, myLocation.y);
 
             Clock.yield();
         }
+    }
+    
+    public void broadcast() throws GameActionException {    	
+    	broadcastEnemies();
+    	broadcastPartCaches();
     }
     
     public void broadcastEnemies() throws GameActionException {
