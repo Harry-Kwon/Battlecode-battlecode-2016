@@ -28,7 +28,7 @@ public class ViperActor extends RobotActor {
 	public void findBestEnemyToAttack() throws GameActionException {
 		bestEnemyToAttack=null;
 		bestEnemyToAttackTimer = 999999999;
-		bestEnemyToAttackDist = 999999999;
+		bestEnemyToAttackDist = 0;
 		
 		for(RobotInfo info : enemiesInfo) {
 			int dist = myLocation.distanceSquaredTo(info.location);
