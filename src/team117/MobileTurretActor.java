@@ -75,24 +75,15 @@ public class MobileTurretActor extends RobotActor {
 		int bestDist = 2000000;
 		nearestAttackableEnemyIsDen = false;
 		
-//		boolean enemyIsBigZombie = false;
+		boolean enemyIsBigZombie = false;
 		
 		for(RobotInfo info : enemiesInfo) {
 			MapLocation loc = info.location;
 			int dist = myLocation.distanceSquaredTo(loc);
-//			if(!enemyIsBigZombie && info.type==RobotType.BIGZOMBIE && dist>5) {
-//				nearestAttackableEnemy = new MapLocation(loc.x, loc.y);
-//				bestDist = dist;
-//				enemyIsBigZombie=true;
-//			} else 
+
 				if(dist >5 && dist < bestDist) {
-//				if(info.type==RobotType.BIGZOMBIE || !enemyIsBigZombie) {
 					nearestAttackableEnemy = new MapLocation(loc.x, loc.y);
 					bestDist = dist;
-//					if(info.type == RobotType.BIGZOMBIE) {
-//						enemyIsBigZombie=true;
-//					}
-//				}
 			}
 		}
 		if(nearestAttackableEnemy!=null) {
@@ -102,19 +93,19 @@ public class MobileTurretActor extends RobotActor {
 		for(RobotInfo info : zombiesInfo) {
 			MapLocation loc = info.location;
 			int dist = myLocation.distanceSquaredTo(loc);
-//			if(!enemyIsBigZombie && info.type==RobotType.BIGZOMBIE && dist>5) {
-//				nearestAttackableEnemy = new MapLocation(loc.x, loc.y);
-//				bestDist = dist;
-//				enemyIsBigZombie=true;
-//			} else 
+			if(!enemyIsBigZombie && info.type==RobotType.BIGZOMBIE && dist>5) {
+				nearestAttackableEnemy = new MapLocation(loc.x, loc.y);
+				bestDist = dist;
+				enemyIsBigZombie=true;
+			} else 
 				if(dist >5 && dist < bestDist) {
-//				if(info.type==RobotType.BIGZOMBIE || !enemyIsBigZombie) {
+				if(info.type==RobotType.BIGZOMBIE || !enemyIsBigZombie) {
 					nearestAttackableEnemy = new MapLocation(loc.x, loc.y);
 					bestDist = dist;
-//					if(info.type == RobotType.BIGZOMBIE) {
-//						enemyIsBigZombie=true;
-//					}
-//				}
+					if(info.type == RobotType.BIGZOMBIE) {
+						enemyIsBigZombie=true;
+					}
+				}
 			}
 		}
 		
