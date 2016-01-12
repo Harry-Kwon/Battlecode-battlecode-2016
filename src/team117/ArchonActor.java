@@ -168,6 +168,8 @@ public class ArchonActor extends RobotActor {
 
         if(allyScoutsNum==0 && (allyGuardsNum+allyTurretsNum)>0) {
             typeToSpawn = RobotType.SCOUT;
+        } else if(allyGuardsNum>5 && allyVipersNum==0) {
+        	typeToSpawn = RobotType.VIPER;
         } else {
         	if(allyGuardsNum*2 < (allyTurretsNum+allyTTMNum)*3) {
         		typeToSpawn = RobotType.GUARD;
@@ -189,13 +191,13 @@ public class ArchonActor extends RobotActor {
         while(true) {
         	rc.setIndicatorString(0, "");
         	if(lastDirection!=null) {
-rc.setIndicatorString(1, lastDirection.toString());
+        		rc.setIndicatorString(1, lastDirection.toString());
 
         	}
             updateRoundVars();
             findAverageAlliesNoScouts();
             
-            if(!reachedCentral && myLocation.distanceSquaredTo(central) <= 16) {
+            if(!reachedCentral && myLocation.distanceSquaredTo(central) < 9) {
                 reachedCentral=true;
             }
             
@@ -273,7 +275,7 @@ rc.setIndicatorString(1, lastDirection.toString());
         } else if(rc.hasBuildRequirements(typeToSpawn) && rc.isCoreReady()) {
             buildActions();
         } else {
-        	if(nearestTurretDist>=13 && nearestTurretPos != null) {
+        	if(nearestTurretDist>=9 && nearestTurretPos != null) {
 				moveToLocationClearIfStuck(nearestTurretPos);
         	} else {
 	            if(nearestPartCache!=null) {

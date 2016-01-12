@@ -4,10 +4,11 @@ import battlecode.common.Clock;
 import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
+import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
 import battlecode.common.Signal;
 
-public class SoldierActor extends RobotActor {
+public class ViperActor extends RobotActor {
 	
 	MapLocation nearestBroadcastEnemy;
 	MapLocation nearestBroadcastAlly;
@@ -20,7 +21,57 @@ public class SoldierActor extends RobotActor {
 	
 	String debugString = "";
 	
-	public SoldierActor(RobotController rc) throws GameActionException {
+	MapLocation bestEnemyToAttack;
+	int bestEnemyToAttackTimer;
+	int bestEnemyToAttackDist;
+	
+	public void findBestEnemyToAttack() throws GameActionException {
+		bestEnemyToAttack=null;
+		bestEnemyToAttackTimer = 999999999;
+		bestEnemyToAttackDist = 999999999;
+		
+		for(RobotInfo info : enemiesInfo) {
+			int dist = myLocation.distanceSquaredTo(info.location);
+			
+			if(dist > myType.attackRadiusSquared) {
+				continue;
+			}
+			
+			if(info.viperInfectedTurns == bestEnemyToAttackTimer) {
+				if(dist > bestEnemyToAttackDist) {
+					bestEnemyToAttackDist = dist;
+					bestEnemyToAttack = new MapLocation(info.location.x, info.location.y);
+				}
+			} else if(info.viperInfectedTurns < bestEnemyToAttackTimer) {
+				bestEnemyToAttackDist = dist;
+				bestEnemyToAttack = new MapLocation(info.location.x, info.location.y);
+			}
+		}
+		
+		if(bestEnemyToAttack==null) {
+			for(RobotInfo info : zombiesInfo) {
+				int dist = myLocation.distanceSquaredTo(info.location);
+				
+				if(dist > myType.attackRadiusSquared) {
+					continue;
+				}
+				
+				if(info.viperInfectedTurns == bestEnemyToAttackTimer) {
+					if(dist > bestEnemyToAttackDist) {
+						bestEnemyToAttackDist = dist;
+						bestEnemyToAttack = new MapLocation(info.location.x, info.location.y);
+					}
+				} else if(info.viperInfectedTurns < bestEnemyToAttackTimer) {
+					bestEnemyToAttackDist = dist;
+					bestEnemyToAttack = new MapLocation(info.location.x, info.location.y);
+				}
+			}
+		}
+		
+	}
+	
+	
+	public ViperActor(RobotController rc) throws GameActionException {
         super(rc);
     }
 	
@@ -36,6 +87,7 @@ public class SoldierActor extends RobotActor {
             findAverageAlliesPos();
             findNearestHostilePos();
             findAverageAlliesNoScouts();
+            findBestEnemyToAttack();
             
             debugString += " | "+Clock.getBytecodeNum();
             
@@ -118,9 +170,9 @@ public class SoldierActor extends RobotActor {
     }
 	
 	public void attack() throws GameActionException {
-		if(nearestHostilePos != null) {
-			if(nearestHostileDist <= myType.attackRadiusSquared) {
-	        	attack(nearestHostilePos);
+		if(bestEnemyToAttack != null) {
+			if(bestEnemyToAttackDist <= myType.attackRadiusSquared) {
+	        	attack(bestEnemyToAttack);
 	        }
 		} else {
 			if(nearestDenPos != null) {
@@ -133,25 +185,16 @@ public class SoldierActor extends RobotActor {
 	}
 	
     public void move() throws GameActionException {
-
+    	findNearestTurret();
 
         if(nearestHostilePos != null) {
         	rc.broadcastSignal(myType.sensorRadiusSquared*2);
-        	if(nearestTurretPos!=null) {
-        		if(nearestTurretDist < 13 || !(allyGuardsNum>=15)) {
-        			if(nearestHostileDist < 5) {
-            			moveFromLocationClearIfStuck(nearestHostilePos);
-            		} else {
-            			tryBFSMoveClearIfStuck(nearestHostilePos);
-            		}
+        	if(nearestTurretPos!=null || (allyGuardsNum>=15)) {
+        		if(nearestHostileDist < 5) {
+        			moveFromLocationClearIfStuck(nearestHostilePos);
         		} else {
-        			if(nearestTurretPos!=null) {
-        				tryBFSMoveClearIfStuck(nearestTurretPos);
-        			} else if(savedRally!=null){
-        				moveToLocationClearIfStuck(savedRally);
-        			}
-        			
-        		} 	
+        			tryBFSMoveClearIfStuck(nearestHostilePos);
+        		}
         	} else {
         		if(savedRally!=null) {
         			tryBFSMoveClearIfStuck(savedRally);
@@ -162,7 +205,6 @@ public class SoldierActor extends RobotActor {
         	}
         	
         } else {
-        	findNearestTurret();
         	if(nearestTurretDist>=13 && nearestTurretPos != null) {
         		moveToLocationClearIfStuck(nearestTurretPos);
         	} else if(nearestBroadcastEnemy!=null) {
@@ -178,8 +220,9 @@ public class SoldierActor extends RobotActor {
         	} else if(savedRally!=null && myLocation.distanceSquaredTo(savedRally)>53) {
         		moveToLocationClearIfStuck(savedRally);
         	} else {
-        		
-        		if(alliesNum >= 20) {
+        		if(nearestTurretPos!=null && nearestTurretDist<=5) {
+        			moveFromLocationClearIfStuck(nearestTurretPos);
+        		} else if(alliesNum >= 20) {
         			moveFromLocationClear(averageAlliesNoScouts);
         		} else {
         			moveToLocationClear(averageAlliesNoScouts);

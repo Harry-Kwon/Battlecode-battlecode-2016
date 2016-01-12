@@ -28,6 +28,9 @@ public class RobotPlayer {
                 case GUARD:
                 	actor = new GuardActor(rc);
                 	break;
+                case VIPER:
+                	actor = new ViperActor(rc);
+                	break;
                 default:
                     actor = new RobotActor(rc);
                     break;

@@ -48,6 +48,7 @@ public class RobotActor {
     int allyTTMNum;
     int allyScoutsNum;
     int allyGuardsNum;
+    int allyVipersNum;
 
     int nearestHostileDist;
     MapLocation nearestHostilePos;
@@ -161,6 +162,7 @@ public class RobotActor {
         allyTTMNum=0;
         allyScoutsNum = 0;
         allyGuardsNum = 0;
+        allyVipersNum = 0;
         for(int i=0; i<alliesNum; i++) {
             alliesPos[i] = alliesInfo[i].location;
             switch(alliesInfo[i].type) {
@@ -175,6 +177,9 @@ public class RobotActor {
                 	break;
                 case GUARD:
                 	allyGuardsNum++;
+                	break;
+                case VIPER:
+                	allyVipersNum++;
                 	break;
                 default:
                     break;
