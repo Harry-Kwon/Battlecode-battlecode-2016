@@ -18,46 +18,43 @@ public class SoldierActor extends RobotActor {
 	
 	RobotType myType;
 	
-	String debugString = "";
 	
 	public SoldierActor(RobotController rc) throws GameActionException {
         super(rc);
     }
 	
+	public void setInitialVars() throws GameActionException {		
+		myTeam = rc.getTeam();
+		myType = rc.getType();
+	}
+	
+	public void updateRoundVars() throws GameActionException{
+		myLocation = rc.getLocation();
+		countNearbyRobots();
+		findAverageAlliesPos();
+		findNearestHostilePos();
+		findAverageAlliesNoScouts();		
+		readBroadcasts();
+	}
+	
 	public void act() throws GameActionException {
-        myTeam = rc.getTeam();
-        myType = rc.getType();
-
-        while(true) {
-        	myLocation = rc.getLocation();
-        	debugString += " | "+Clock.getBytecodeNum();
-            countNearbyRobots();
-            debugString += " | "+Clock.getBytecodeNum();
-            findAverageAlliesPos();
-            findNearestHostilePos();
-            findAverageAlliesNoScouts();
-            
-            debugString += " | "+Clock.getBytecodeNum();
-            
-            readBroadcasts();
-            
-            debugString += " | "+Clock.getBytecodeNum();
-            
+		setInitialVars();
+        while(true) {    
+        	updateRoundVars();
+        	broadcast();
+        	
             attack();
-            
-            debugString += " | "+Clock.getBytecodeNum();
-
-            /*act*/
             move();
             
-            debugString += " | "+Clock.getBytecodeNum();
-            
-            rc.setIndicatorString(0, debugString);
-            debugString = "";
-
             Clock.yield();
         }
     }
+	
+	public void broadcast() throws GameActionException {
+		if(nearestHostilePos!=null) {
+			rc.broadcastSignal(myType.sensorRadiusSquared*2);			
+		}
+	}
 	
 	public void readBroadcasts() throws GameActionException {
         Signal[] signals = rc.emptySignalQueue();
@@ -133,12 +130,11 @@ public class SoldierActor extends RobotActor {
 	}
 	
     public void move() throws GameActionException {
-
+    	findNearestTurret();
 
         if(nearestHostilePos != null) {
-        	rc.broadcastSignal(myType.sensorRadiusSquared*2);
         	if(nearestTurretPos!=null) {
-        		if(nearestTurretDist < 13 || !(allyGuardsNum>=15)) {
+        		if(nearestTurretDist < 13) {
         			if(nearestHostileDist < 5) {
             			moveFromLocationClearIfStuck(nearestHostilePos);
             		} else {
@@ -162,7 +158,6 @@ public class SoldierActor extends RobotActor {
         	}
         	
         } else {
-        	findNearestTurret();
         	if(nearestTurretDist>=13 && nearestTurretPos != null) {
         		moveToLocationClearIfStuck(nearestTurretPos);
         	} else if(nearestBroadcastEnemy!=null) {
@@ -178,8 +173,9 @@ public class SoldierActor extends RobotActor {
         	} else if(savedRally!=null && myLocation.distanceSquaredTo(savedRally)>53) {
         		moveToLocationClearIfStuck(savedRally);
         	} else {
-        		
-        		if(alliesNum >= 20) {
+        		if(nearestTurretPos!=null && nearestTurretDist<=5) {
+        			moveFromLocationClearIfStuck(nearestTurretPos);
+        		} else if(alliesNum >= 20) {
         			moveFromLocationClear(averageAlliesNoScouts);
         		} else {
         			moveToLocationClear(averageAlliesNoScouts);

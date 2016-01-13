@@ -1,4 +1,4 @@
-package team117;
+package testDummy;
 
 import battlecode.common.*;
 
@@ -171,12 +171,14 @@ public class ArchonActor extends RobotActor {
     public void determineSpawnType() {
         //set type to spawn
 
-        if(allyScoutsNum==0 && (allyGuardsNum+allyTurretsNum)>0) {
+        if(allyScoutsNum==0 && (allySoldiersNum+allyGuardsNum+allyTurretsNum+allyTTMNum)>0) {
             typeToSpawn = RobotType.SCOUT;
-        } else if(allyGuardsNum>5 && allyVipersNum==0) {
-        	typeToSpawn = RobotType.VIPER;
-        } else {
-        	if(allyGuardsNum*2 < (allyTurretsNum+allyTTMNum)*3) {
+        }
+//        else if(allyGuardsNum>5 && allyVipersNum==0) {
+//        	typeToSpawn = RobotType.VIPER;
+//        } 
+        else {
+        	if((allySoldiersNum+allyGuardsNum)*2 < (allyTurretsNum+allyTTMNum)*3) {
         		typeToSpawn = RobotType.GUARD;
         	} else {
         		typeToSpawn = RobotType.TURRET;
@@ -249,7 +251,9 @@ public class ArchonActor extends RobotActor {
         findNearestNeutral();
         findNearestTurret();
         
-        if(hostilesNearby()) {
+        if(!reachedCentral) {
+        	moveToLocationClearIfStuck(central);
+        } else if(hostilesNearby()) {
         	if(isCentral) {
                 moveFromLocationClearIfStuck(nearestHostilePos);
                 return;
@@ -264,11 +268,9 @@ public class ArchonActor extends RobotActor {
         } else if(rc.hasBuildRequirements(typeToSpawn) && rc.isCoreReady()) {
             buildActions();
         } else {
-        	if(!reachedCentral) {
-            	moveToLocationClearIfStuck(central);
-            } else if(nearestTurretDist>=9 && nearestTurretPos != null) {
+        	if(nearestTurretDist>=9 && nearestTurretPos != null) {
 				moveToLocationClearIfStuck(nearestTurretPos);
-        	} else {
+        	} else if(!repairAllies()){
 	            if(nearestPartCache!=null) {
 	            	moveToLocationClear(nearestPartCache);
 	            } else if(nearestNeutralPos!=null && (!isCentral||archons==1)) {
@@ -281,7 +283,7 @@ public class ArchonActor extends RobotActor {
 	            	} else {
 	            		moveToLocationClearIfStuck(nearestNeutralPos);
 	            	}
-	            } else if(!repairAllies()){
+	            } else {
 	            	if(savedRally!=null) {
 	            		moveToLocationClearIfStuck(savedRally);
 	            	} else {

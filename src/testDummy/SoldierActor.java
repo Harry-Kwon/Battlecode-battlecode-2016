@@ -1,14 +1,13 @@
-package team117;
+package testDummy;
 
 import battlecode.common.Clock;
 import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
-import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
 import battlecode.common.Signal;
 
-public class ViperActor extends RobotActor {
+public class SoldierActor extends RobotActor {
 	
 	MapLocation nearestBroadcastEnemy;
 	MapLocation nearestBroadcastAlly;
@@ -19,100 +18,43 @@ public class ViperActor extends RobotActor {
 	
 	RobotType myType;
 	
-	String debugString = "";
 	
-	MapLocation bestEnemyToAttack;
-	int bestEnemyToAttackTimer;
-	int bestEnemyToAttackDist;
-	
-	public void findBestEnemyToAttack() throws GameActionException {
-		bestEnemyToAttack=null;
-		bestEnemyToAttackTimer = 999999999;
-		bestEnemyToAttackDist = 0;
-		
-		for(RobotInfo info : enemiesInfo) {
-			int dist = myLocation.distanceSquaredTo(info.location);
-			
-			if(dist > myType.attackRadiusSquared) {
-				continue;
-			}
-			if(info.type==RobotType.ARCHON) {
-				return;
-			}
-			
-			if(info.viperInfectedTurns == bestEnemyToAttackTimer) {
-				if(dist > bestEnemyToAttackDist) {
-					bestEnemyToAttackDist = dist;
-					bestEnemyToAttack = new MapLocation(info.location.x, info.location.y);
-				}
-			} else if(info.viperInfectedTurns < bestEnemyToAttackTimer) {
-				bestEnemyToAttackDist = dist;
-				bestEnemyToAttack = new MapLocation(info.location.x, info.location.y);
-			}
-		}
-		
-		if(bestEnemyToAttack==null) {
-			for(RobotInfo info : zombiesInfo) {
-				int dist = myLocation.distanceSquaredTo(info.location);
-				
-				if(dist > myType.attackRadiusSquared) {
-					continue;
-				}
-				
-				if(info.viperInfectedTurns == bestEnemyToAttackTimer) {
-					if(dist > bestEnemyToAttackDist) {
-						bestEnemyToAttackDist = dist;
-						bestEnemyToAttack = new MapLocation(info.location.x, info.location.y);
-					}
-				} else if(info.viperInfectedTurns < bestEnemyToAttackTimer) {
-					bestEnemyToAttackDist = dist;
-					bestEnemyToAttack = new MapLocation(info.location.x, info.location.y);
-				}
-			}
-		}
-		
-	}
-	
-	
-	public ViperActor(RobotController rc) throws GameActionException {
+	public SoldierActor(RobotController rc) throws GameActionException {
         super(rc);
     }
 	
+	public void setInitialVars() throws GameActionException {		
+		myTeam = rc.getTeam();
+		myType = rc.getType();
+	}
+	
+	public void updateRoundVars() throws GameActionException{
+		myLocation = rc.getLocation();
+		countNearbyRobots();
+		findAverageAlliesPos();
+		findNearestHostilePos();
+		findAverageAlliesNoScouts();		
+		readBroadcasts();
+	}
+	
 	public void act() throws GameActionException {
-        myTeam = rc.getTeam();
-        myType = rc.getType();
-
-        while(true) {
-        	myLocation = rc.getLocation();
-        	debugString += " | "+Clock.getBytecodeNum();
-            countNearbyRobots();
-            debugString += " | "+Clock.getBytecodeNum();
-            findAverageAlliesPos();
-            findNearestHostilePos();
-            findAverageAlliesNoScouts();
-            findBestEnemyToAttack();
-            
-            debugString += " | "+Clock.getBytecodeNum();
-            
-            readBroadcasts();
-            
-            debugString += " | "+Clock.getBytecodeNum();
-            
+		setInitialVars();
+        while(true) {    
+        	updateRoundVars();
+        	broadcast();
+        	
             attack();
-            
-            debugString += " | "+Clock.getBytecodeNum();
-
-            /*act*/
             move();
             
-            debugString += " | "+Clock.getBytecodeNum();
-            
-            rc.setIndicatorString(0, debugString);
-            debugString = "";
-
             Clock.yield();
         }
     }
+	
+	public void broadcast() throws GameActionException {
+		if(nearestHostilePos!=null) {
+			rc.broadcastSignal(myType.sensorRadiusSquared*2);			
+		}
+	}
 	
 	public void readBroadcasts() throws GameActionException {
         Signal[] signals = rc.emptySignalQueue();
@@ -173,9 +115,9 @@ public class ViperActor extends RobotActor {
     }
 	
 	public void attack() throws GameActionException {
-		if(bestEnemyToAttack != null) {
-			if(bestEnemyToAttackDist <= myType.attackRadiusSquared) {
-	        	attack(bestEnemyToAttack);
+		if(nearestHostilePos != null) {
+			if(nearestHostileDist <= myType.attackRadiusSquared) {
+	        	attack(nearestHostilePos);
 	        }
 		} else {
 			if(nearestDenPos != null) {
@@ -191,13 +133,21 @@ public class ViperActor extends RobotActor {
     	findNearestTurret();
 
         if(nearestHostilePos != null) {
-        	rc.broadcastSignal(myType.sensorRadiusSquared*2);
-        	if(nearestTurretPos!=null || (allyGuardsNum>=15)) {
-        		if(nearestHostileDist < 5) {
-        			moveFromLocationClearIfStuck(nearestHostilePos);
+        	if(nearestTurretPos!=null) {
+        		if(nearestTurretDist < 13) {
+        			if(nearestHostileDist < 5) {
+            			moveFromLocationClearIfStuck(nearestHostilePos);
+            		} else {
+            			tryBFSMoveClearIfStuck(nearestHostilePos);
+            		}
         		} else {
-        			tryBFSMoveClearIfStuck(nearestHostilePos);
-        		}
+        			if(nearestTurretPos!=null) {
+        				tryBFSMoveClearIfStuck(nearestTurretPos);
+        			} else if(savedRally!=null){
+        				moveToLocationClearIfStuck(savedRally);
+        			}
+        			
+        		} 	
         	} else {
         		if(savedRally!=null) {
         			tryBFSMoveClearIfStuck(savedRally);

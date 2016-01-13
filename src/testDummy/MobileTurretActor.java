@@ -1,4 +1,4 @@
-package team117;
+package testDummy;
 
 import battlecode.common.Clock;
 import battlecode.common.Direction;
@@ -90,13 +90,16 @@ public class MobileTurretActor extends RobotActor {
 		
 		boolean enemyIsBigZombie = false;
 		
+		double leastHealth = 999999.0;
+		
 		for(RobotInfo info : enemiesInfo) {
 			MapLocation loc = info.location;
 			int dist = myLocation.distanceSquaredTo(loc);
 
-				if(dist >5 && dist < bestDist) {
+				if(dist >5 && info.health < leastHealth) {
 					nearestAttackableEnemy = new MapLocation(loc.x, loc.y);
-					bestDist = dist;
+					
+					leastHealth=info.health;
 			}
 		}
 		if(nearestAttackableEnemy!=null) {
@@ -259,7 +262,7 @@ public class MobileTurretActor extends RobotActor {
     		}
     		return;
         	
-        } else if(nearestAttackableEnemy!=null && nearestAttackableEnemyIsDen && nearestBroadcastEnemy==null) {
+        } else if(nearestAttackableEnemy!=null && nearestAttackableEnemyIsDen) {
         	if(rc.isWeaponReady()) {
 //    			if(onEvenTile()) {
     				rc.unpack();

@@ -1,4 +1,4 @@
-package team117;
+package testDummy;
 
 import battlecode.common.Clock;
 import battlecode.common.GameActionException;
@@ -36,7 +36,7 @@ public class ViperActor extends RobotActor {
 			if(dist > myType.attackRadiusSquared) {
 				continue;
 			}
-			if(info.type==RobotType.ARCHON) {
+			if(info.type!=RobotType.GUARD || info.type!=RobotType.TURRET) {
 				return;
 			}
 			
