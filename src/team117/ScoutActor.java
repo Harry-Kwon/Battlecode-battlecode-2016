@@ -70,7 +70,7 @@ public class ScoutActor extends RobotActor {
     		if(info.type==RobotType.ZOMBIEDEN) {
     			rc.broadcastMessageSignal(1, info.location.x+1000*info.location.y, myType.sensorRadiusSquared*2);
     		} else {
-    			rc.broadcastMessageSignal(0,  info.location.x+1000*info.location.y, myType.sensorRadiusSquared*2);
+    			rc.broadcastMessageSignal(5,  info.location.x+1000*info.location.y, myType.sensorRadiusSquared*2);
     		}
     		sent++;
     		
@@ -131,15 +131,34 @@ public class ScoutActor extends RobotActor {
         }
     }
     
+    MapLocation nearestAllyNotScout;
+    int nearestAllyNotScoutDist;
+    
+    public void findNearestAllyNotScout() throws GameActionException {
+    	nearestAllyNotScoutDist = 2000000;
+    	nearestAllyNotScout = null;
+    	
+    	for(RobotInfo info : alliesInfo) {
+    		if(info.type!=RobotType.SCOUT) {
+    			int dist = myLocation.distanceSquaredTo(info.location);
+    			if(dist < nearestAllyNotScoutDist) {
+    				nearestAllyNotScoutDist = dist;
+    				nearestAllyNotScout = new MapLocation(info.location.x, info.location.y);
+    			}
+    		}
+    	}
+    }
+    
     public void move() throws GameActionException {
         findNearestTurret();
         findNearestScout();
+        findNearestAllyNotScout();
         
-        if(nearestHostilePos!=null && myLocation.distanceSquaredTo(nearestHostilePos)<9) {
+        if(nearestHostilePos!=null && myLocation.distanceSquaredTo(nearestHostilePos)<=13) {
         	moveFromLocationClearIfStuck(nearestHostilePos);
         } if(alliesNum==0 && savedRally!=null) {
         	moveToLocationClearIfStuck(savedRally);
-        } else if(myLocation.distanceSquaredTo(averageAlliesNoScouts)>16/*8*/) {
+        } else if(nearestAllyNotScout != null && nearestAllyNotScoutDist>9/*8*/) {
             moveToLocationClearIfStuck(averageAlliesNoScouts);
         } else {
             if(nearestScoutPos!=null) {

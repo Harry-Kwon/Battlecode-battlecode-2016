@@ -76,6 +76,7 @@ public class ArchonActor extends RobotActor {
         }
 
         central = archonPositions[bestArchon];
+        savedRally = new MapLocation(central.x, central.y);
         
         if(myLocation.equals(central)) {
         	isCentral = true;
@@ -128,7 +129,7 @@ public class ArchonActor extends RobotActor {
                     nearestBroadcastAlly = new MapLocation(loc.x, loc.y);
                 }
             	 
-            } else if(msg[0]==0) {
+            } else if(msg[0]==0 || msg[0]==5) {
             	MapLocation loc = new MapLocation(msg[1]%1000, msg[1]/1000);
                 
                 int dist = myLocation.distanceSquaredTo(loc);
@@ -170,8 +171,8 @@ public class ArchonActor extends RobotActor {
 
     public void determineSpawnType() {
         //set type to spawn
-
-        if(allyScoutsNum==0 && (allyGuardsNum+allyTurretsNum)>0) {
+    	
+        if(allyScoutsNum==0 && (allyGuardsNum+allyTurretsNum+allyTTMNum)>2) {
             typeToSpawn = RobotType.SCOUT;
         } else if(allyGuardsNum>5 && allyVipersNum==0) {
         	typeToSpawn = RobotType.VIPER;
@@ -207,13 +208,18 @@ public class ArchonActor extends RobotActor {
     public void broadcast() throws GameActionException {
     	sent = 0;
     	if(isCentral) {
-    		if(rc.getRoundNum()%100==30) {
-    			rc.broadcastMessageSignal(3, averageAlliesNoScouts.x+1000*averageAlliesNoScouts.y, 20000);
+    		if(rc.getRoundNum()%300==299) {
+    			rc.broadcastMessageSignal(3, averageAlliesNoScouts.x+1000*averageAlliesNoScouts.y, 6400);
     			sent = 20;
     		} else {
     			rc.broadcastMessageSignal(3, averageAlliesNoScouts.x+1000*averageAlliesNoScouts.y, myType.sensorRadiusSquared*2);
     			sent++;
     		}
+        } else {
+        	if(savedRally != null) {
+        		rc.broadcastMessageSignal(3, myLocation.x+1000*myLocation.y, myType.sensorRadiusSquared*2);
+        		sent++;
+        	}
         }
         
         broadcastEnemies();
@@ -235,7 +241,7 @@ public class ArchonActor extends RobotActor {
     		if(info.type==RobotType.ZOMBIEDEN) {
     			rc.broadcastMessageSignal(1, info.location.x+1000*info.location.y, myType.sensorRadiusSquared*2);
     		} else {
-    			rc.broadcastMessageSignal(0,  info.location.x+1000*info.location.y, myType.sensorRadiusSquared*2);
+    			rc.broadcastMessageSignal(4,  info.location.x+1000*info.location.y, myType.sensorRadiusSquared*2);
     		}
     		
     		sent++;
@@ -264,13 +270,14 @@ public class ArchonActor extends RobotActor {
         } else if(rc.hasBuildRequirements(typeToSpawn) && rc.isCoreReady()) {
             buildActions();
         } else {
-        	if(!reachedCentral) {
-            	moveToLocationClearIfStuck(central);
-            } else if(nearestTurretDist>=9 && nearestTurretPos != null) {
+//        	if(!reachedCentral) {
+//            	tryBFSMoveClear(central);
+//            } else 
+            	if(nearestTurretDist>=9 && nearestTurretPos != null) {
 				moveToLocationClearIfStuck(nearestTurretPos);
         	} else {
 	            if(nearestPartCache!=null) {
-	            	moveToLocationClear(nearestPartCache);
+	            	tryBFSMoveClear(nearestPartCache);
 	            } else if(nearestNeutralPos!=null && (!isCentral||archons==1)) {
 	            	rc.setIndicatorString(0, "NEUTRAL DISTANCE: "+nearestNeutralDist);
 	            	if(nearestNeutralDist <= 3) {
@@ -279,13 +286,13 @@ public class ArchonActor extends RobotActor {
 	            		}
 	            		return;
 	            	} else {
-	            		moveToLocationClearIfStuck(nearestNeutralPos);
+	            		tryBFSMoveClear(nearestNeutralPos);
 	            	}
 	            } else if(!repairAllies()){
 	            	if(savedRally!=null) {
-	            		moveToLocationClearIfStuck(savedRally);
+	            		tryBFSMoveClearIfStuck(savedRally);
 	            	} else {
-	            		moveToLocationClearIfStuck(averageAlliesNoScouts);
+	            		tryBFSMoveClear(averageAlliesNoScouts);
 	            	}
 	            }
 	        }

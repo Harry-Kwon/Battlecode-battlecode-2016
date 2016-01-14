@@ -83,7 +83,7 @@ public class SoldierActor extends RobotActor {
                     nearestBroadcastAlly = new MapLocation(loc.x, loc.y);
                 }
             	 
-            } else if(msg[0]==0){
+            } else if(msg[0]==0 || msg[0]==5){
             	MapLocation loc = new MapLocation(msg[1]%1000, msg[1]/1000);
                 
                 int dist = myLocation.distanceSquaredTo(loc);
@@ -133,21 +133,8 @@ public class SoldierActor extends RobotActor {
     	findNearestTurret();
 
         if(nearestHostilePos != null) {
-        	if(nearestTurretPos!=null) {
-        		if(nearestTurretDist < 13) {
-        			if(nearestHostileDist < 5) {
-            			moveFromLocationClearIfStuck(nearestHostilePos);
-            		} else {
-            			tryBFSMoveClearIfStuck(nearestHostilePos);
-            		}
-        		} else {
-        			if(nearestTurretPos!=null) {
-        				tryBFSMoveClearIfStuck(nearestTurretPos);
-        			} else if(savedRally!=null){
-        				moveToLocationClearIfStuck(savedRally);
-        			}
-        			
-        		} 	
+        	if(nearestTurretPos!=null /*|| (allyGuardsNum>=15)*/) {
+        		tryBFSMoveClearIfStuck(nearestHostilePos);	
         	} else {
         		if(savedRally!=null) {
         			tryBFSMoveClearIfStuck(savedRally);
@@ -158,9 +145,10 @@ public class SoldierActor extends RobotActor {
         	}
         	
         } else {
-        	if(nearestTurretDist>=13 && nearestTurretPos != null) {
-        		moveToLocationClearIfStuck(nearestTurretPos);
-        	} else if(nearestBroadcastEnemy!=null) {
+//        	if(nearestTurretDist>=13 && nearestTurretPos != null) {
+//        		moveToLocationClearIfStuck(nearestTurretPos);
+//        	} else 
+        		if(nearestBroadcastEnemy!=null) {
         		moveToLocationClearIfStuck(nearestBroadcastEnemy);
         	} else if(nearestBroadcastAlly!=null) {
         		moveToLocationClearIfStuck(nearestBroadcastAlly);

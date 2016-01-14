@@ -122,28 +122,69 @@ public class MobileTurretActor extends RobotActor {
 			}
 		}
 		
+		boolean enemyTargetFound = false;
+		
 		for(Signal s: signals) {
 			int[] msg = s.getMessage();
-			if(s.getTeam() != myTeam || msg==null || !(msg[0]==0||msg[0]==2)) {
+			if(s.getTeam() != myTeam || msg==null || !(msg[0]==0||msg[0]==2||msg[0]==5)) {
 				continue;
 			}
 			
 			MapLocation loc = new MapLocation(msg[1]%1000, msg[1]/1000);
 			int dist = myLocation.distanceSquaredTo(loc);
 			
-//			if(!enemyIsBigZombie && msg[0]==2 && dist>5 && dist<=48) {
-//				nearestAttackableEnemy = new MapLocation(loc.x, loc.y);
-//				bestDist = dist;
-//				enemyIsBigZombie=true;
-//			} else 
+			if(enemyIsBigZombie) {
+				if(msg[0]!=2) {
+					continue;
+				}
+				
 				if(dist >5 && dist<=48 && dist < bestDist) {
-//					if(msg[0]==2||!enemyIsBigZombie) {
+					nearestAttackableEnemy = new MapLocation(loc.x, loc.y);
+					bestDist = dist;
+				}
+			} else {
+				if(msg[0]==2 && dist>5 && dist<48) {
+					nearestAttackableEnemy = new MapLocation(loc.x, loc.y);
+					bestDist = dist;
+					enemyIsBigZombie=true;
+				} else {
+					if(enemyTargetFound) {
+						if(msg[0]==4) {
+							continue;
+						} else {
+							if(dist >5 && dist<=48 && dist < bestDist) {
+								nearestAttackableEnemy = new MapLocation(loc.x, loc.y);
+								bestDist = dist;
+							}
+						}
+					} else {
+						if(msg[0]==0 && dist>5 && dist<48) {
+							nearestAttackableEnemy = new MapLocation(loc.x, loc.y);
+							bestDist = dist;
+							enemyTargetFound=true;
+						} else {
+							if(dist >5 && dist<=48 && dist < bestDist) {
+								nearestAttackableEnemy = new MapLocation(loc.x, loc.y);
+								bestDist = dist;
+							}
+						}
+					}
+				}
+			}
+			
+			if(!enemyIsBigZombie && msg[0]==2 && dist>5 && dist<=48) {
+				nearestAttackableEnemy = new MapLocation(loc.x, loc.y);
+				bestDist = dist;
+				enemyIsBigZombie=true;
+			} else 
+				if(dist >5 && dist<=48 && dist < bestDist) {
+					if(msg[0]==2||!enemyIsBigZombie) {
 						nearestAttackableEnemy = new MapLocation(loc.x, loc.y);
 						bestDist = dist;
-//						if(msg[0]==2) {
-//							enemyIsBigZombie = true;
-//						}
-//					}
+						if(msg[0]==2) {
+							enemyIsBigZombie = true;
+						}
+					}
 				}
 			
 		}
@@ -186,7 +227,7 @@ public class MobileTurretActor extends RobotActor {
                     nearestBroadcastAlly = new MapLocation(loc.x, loc.y);
                 }
             	 
-            } else if(msg[0]==0) {
+            } else if(msg[0]==0 || msg[0]==5) {
             	MapLocation loc = new MapLocation(msg[1]%1000, msg[1]/1000);
                 
                 int dist = myLocation.distanceSquaredTo(loc);
@@ -210,7 +251,7 @@ public class MobileTurretActor extends RobotActor {
 					bestRallyDist = dist;
 					nearestBroadcastRally = new MapLocation(loc.x, loc.y);
             	}
-            }   
+            }
         }
         if(nearestBroadcastRally!=null) {
         	savedRally = new MapLocation(nearestBroadcastRally.x, nearestBroadcastRally.y);

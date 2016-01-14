@@ -422,7 +422,7 @@ public class RobotActor {
                         lastDirection = thisDir;
                         return;
             		}
-            	} else {
+            	} else if(rc.senseRubble(loc) < 300){
             		rc.clearRubble(thisDir);
             		return;
             	}
@@ -466,7 +466,7 @@ public class RobotActor {
         if(!moved) {
             for(int i=0; i<8; i++) {
             	Direction thisDir = nextDir(dir, i);
-                if(rc.senseRobotAtLocation(myLocation.add(thisDir))==null && rc.senseRubble(myLocation.add(thisDir)) > 50.0) {
+                if(rc.senseRobotAtLocation(myLocation.add(thisDir))==null && rc.senseRubble(myLocation.add(thisDir)) > 50.0 && rc.senseRubble(myLocation.add(thisDir)) < 300) {
                     rc.clearRubble(thisDir);
                     return;
                 }
@@ -509,7 +509,7 @@ public class RobotActor {
         if(!moved) {
             for(int i=0; i<5; i++) {
             	Direction thisDir = nextDir(dir, i);
-                if(rc.senseRobotAtLocation(myLocation.add(thisDir))==null && rc.senseRubble(myLocation.add(thisDir)) > 50.0) {
+                if(rc.senseRobotAtLocation(myLocation.add(thisDir))==null && rc.senseRubble(myLocation.add(thisDir)) > 50.0  && rc.senseRubble(myLocation.add(thisDir)) < 300) {
                     rc.clearRubble(thisDir);
                     return;
                 }
@@ -615,12 +615,30 @@ public class RobotActor {
         return true;
     }
     
+    public void tryBFSMoveClear(MapLocation target) throws GameActionException {
+    	Direction moveDir = getBFSDirectionTo(target);
+    	if(moveDir==Direction.NONE) {
+    		moveToLocationClear(target);
+    	} else {
+    		moveInDirectionClearIfStuck(moveDir);
+    	}
+    }
+    
     public void tryBFSMove(MapLocation target) throws GameActionException {
     	Direction moveDir = getBFSDirectionTo(target);
     	if(moveDir == Direction.NONE) {
     		moveToLocation(target);
     	} else {
     		moveInDirection(moveDir);
+    	}
+    }
+    
+    public void tryBFSMoveClearIfStuckBack(MapLocation target) throws GameActionException {
+    	Direction moveDir = getBFSDirectionTo(target);
+    	if(moveDir == Direction.NONE) {
+    		moveToLocationClearIfStuckBack(target);
+    	} else {
+    		moveInDirectionClearIfStuckBack(moveDir);
     	}
     }
 
@@ -636,7 +654,14 @@ public class RobotActor {
     
     public Direction getBFSDirectionTo(MapLocation target) throws GameActionException {
     	if(!rc.canSense(target)) {
-    		return(Direction.NONE);
+    		MapLocation newTarget = new MapLocation(myLocation.x, myLocation.y);
+    		Direction dir= myLocation.directionTo(target);
+    		
+    		while(rc.canSense(newTarget.add(dir))) {
+    			newTarget = newTarget.add(dir);
+    		}
+    		
+    		return(getBFSDirectionTo(newTarget));
     	}
     	
     	Direction[] directions = {Direction.NORTH, Direction.NORTH_EAST, Direction.EAST, Direction.SOUTH_EAST,

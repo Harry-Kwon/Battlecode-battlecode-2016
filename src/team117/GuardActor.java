@@ -83,7 +83,7 @@ public class GuardActor extends RobotActor {
                     nearestBroadcastAlly = new MapLocation(loc.x, loc.y);
                 }
             	 
-            } else if(msg[0]==0){
+            } else if(msg[0]==0 || msg[0]==5){
             	MapLocation loc = new MapLocation(msg[1]%1000, msg[1]/1000);
                 
                 int dist = myLocation.distanceSquaredTo(loc);
@@ -145,9 +145,10 @@ public class GuardActor extends RobotActor {
         	}
         	
         } else {
-        	if(nearestTurretDist>=13 && nearestTurretPos != null) {
-        		moveToLocationClearIfStuck(nearestTurretPos);
-        	} else if(nearestBroadcastEnemy!=null) {
+//        	if(nearestTurretDist>=13 && nearestTurretPos != null) {
+//        		moveToLocationClearIfStuck(nearestTurretPos);
+//        	} else 
+        		if(nearestBroadcastEnemy!=null) {
         		moveToLocationClearIfStuck(nearestBroadcastEnemy);
         	} else if(nearestBroadcastAlly!=null) {
         		moveToLocationClearIfStuck(nearestBroadcastAlly);
